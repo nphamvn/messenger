@@ -9,14 +9,11 @@ export default function PeopleList() {
   useEffect(() => {
     const fetchPeople = async () => {
       const accessToken = await getAccessTokenSilently();
-      const people = await fetch(
-        `${import.meta.env.VITE_BASE_CHAT_API_URL}/people`,
-        {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
+      const people = await fetch("api/people", {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
         },
-      ).then((res) => res.json() as Promise<IUser[]>);
+      }).then((res) => res.json() as Promise<IUser[]>);
       setPeople(people);
     };
 
@@ -25,23 +22,20 @@ export default function PeopleList() {
 
   const addContact = async (id: string) => {
     const accessToken = await getAccessTokenSilently();
-    const response = await fetch(
-      `${import.meta.env.VITE_BASE_CHAT_API_URL}/contacts`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ id }),
+    const response = await fetch("api/contacts", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
       },
-    );
+      body: JSON.stringify({ id }),
+    });
 
     if (response.ok) {
       setPeople((people) =>
         people.map((person) =>
-          person.id === id ? { ...person, isContact: true } : person,
-        ),
+          person.id === id ? { ...person, isContact: true } : person
+        )
       );
     }
   };

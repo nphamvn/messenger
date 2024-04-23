@@ -10,14 +10,11 @@ export default function ContactList() {
   useEffect(() => {
     const fetchContacts = async () => {
       const accessToken = await getAccessTokenSilently();
-      const contacts = await fetch(
-        `${import.meta.env.VITE_BASE_CHAT_API_URL}/contacts`,
-        {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
+      const contacts = await fetch("api/contacts", {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
         },
-      ).then((res) => res.json() as Promise<IUser[]>);
+      }).then((res) => res.json() as Promise<IUser[]>);
       setContacts(contacts);
     };
 
@@ -30,7 +27,7 @@ export default function ContactList() {
       <ul className="mt-3 max-w-md divide-y divide-gray-200">
         {contacts.map((contact) => (
           <li key={contact.id} className="p-3">
-            <Link to={`../u/${contact.id}`} className="flex items-center">
+            <Link to={`/c/${contact.id}`} className="flex items-center">
               <div className="me-2 flex-shrink-0">
                 <img
                   className="h-8 w-8 rounded-full"

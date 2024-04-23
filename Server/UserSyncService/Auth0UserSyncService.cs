@@ -10,10 +10,10 @@ using UserSyncService.Auth0Api;
 
 namespace UserSyncService;
 
-public class Auth0UserAsyncService(
+public class Auth0UserSyncService(
     IConfiguration configuration,
     IHostApplicationLifetime hostApplicationLifetime,
-    ILogger<Auth0UserAsyncService> logger) : BackgroundService
+    ILogger<Auth0UserSyncService> logger) : BackgroundService
 {
     private async Task<GetAccessTokenResponse> GetAccessToken()
     {
@@ -122,6 +122,9 @@ public class Auth0UserAsyncService(
             await connection.ExecuteAsync(upsertSql);
 
             await transaction.CommitAsync(stoppingToken);
+            
+            File.Delete(zipFilePath);
+            File.Delete(csvFilePath);
         }
         catch (Exception)
         {

@@ -4,7 +4,7 @@ export default function Header({ activeTab }: { activeTab?: string }) {
   return (
     <div className="flex space-x-2">
       <Link
-        to="/chat"
+        to="/"
         className={
           activeTab === "conversations" ? "text-blue-500 underline" : ""
         }
@@ -12,13 +12,13 @@ export default function Header({ activeTab }: { activeTab?: string }) {
         Conversations
       </Link>
       <Link
-        to="/chat/contacts"
+        to="/contacts"
         className={activeTab === "contacts" ? "text-blue-500 underline" : ""}
       >
         Contacts
       </Link>
       <Link
-        to="/chat/people"
+        to="/people"
         className={activeTab === "people" ? "text-blue-500 underline" : ""}
       >
         People

@@ -22,17 +22,19 @@ type MessageInput = {
 
 const url: string = import.meta.env.VITE_BASE_CHAT_API_URL;
 
-export default function Chat() {
+export default function ConversationWindow({
+  conversationId,
+}: {
+  conversationId?: number;
+}) {
   const { getAccessTokenSilently } = useAuth0();
-  const conversationId = useParams()["conversationId"]; // Get conversationId from URL for real existing conversation (when user clicks on a conversation)
-  console.log("conversationId", conversationId);
   const userId = useParams()["userId"]; // Get userId from URL for new conversation (when user clicks on a contact to start a new conversation)
   console.log("userId", userId);
 
   const conversationIdRef = useRef();
 
   const conversation = useRef<IConversation>({
-    id: conversationId ? parseInt(conversationId) : 0,
+    id: conversationId || 0,
     lastMessage: "",
     members: [],
   });
@@ -57,7 +59,7 @@ export default function Chat() {
             headers: {
               Authorization: `Bearer ${accessToken}`,
             },
-          },
+          }
         ).then((res) => res.json() as Promise<IMessage[]>);
       } else if (userId) {
         console.log("Fetching private conversation with user", userId);
@@ -75,7 +77,7 @@ export default function Chat() {
               headers: {
                 Authorization: `Bearer ${accessToken}`,
               },
-            },
+            }
           ).then((res) => res.json() as Promise<IMessage[]>);
         }
       }
@@ -87,7 +89,7 @@ export default function Chat() {
   const handleReceiveMessage = (_: IConversation, message: IMessage) => {
     console.log("Received message", message);
     const msg = messagesRef.current.find(
-      (m) => m.clientId === message.clientId,
+      (m) => m.clientId === message.clientId
     );
     let newMessages: IMessage[];
     if (msg) {
@@ -141,7 +143,7 @@ export default function Chat() {
         conversation.current?.id || null,
         conversation.current?.members.map((m) => m.id).join(",") || null,
         messageInput.message,
-        newMessage.clientId,
+        newMessage.clientId
       )
       .then(() => {
         console.log("Message sent");

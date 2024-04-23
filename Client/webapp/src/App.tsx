@@ -1,18 +1,36 @@
-import { Auth0Provider } from "@auth0/auth0-react";
+import { useAuth0 } from "@auth0/auth0-react";
+import { Route, Routes } from "react-router-dom";
+import { PageLoader } from "./components/PageLoader";
+import { LoginPage } from "./pages/LoginPage";
+import { AuthenticationGuard } from "./components/AuthenticationGuard";
+import { CallbackPage } from "./pages/CallbackPage";
+import { NotFoundPage } from "./pages/NotFoundPage";
+import ConversationList from "./pages/conversationList";
+import ContactList from "./pages/contactList";
+import PeopleList from "./pages/peopleList";
+import Index from "./pages/Index";
 
-function App() {
+export default function App() {
+  const { isLoading } = useAuth0();
+
+  if (isLoading) {
+    return (
+      <div className="page-layout">
+        <PageLoader />
+      </div>
+    );
+  }
+
   return (
-    <Auth0Provider
-      domain={import.meta.env.VITE_AUTH0_DOMAIN}
-      clientId={import.meta.env.VITE_AUTH0_CLIENT_ID}
-      authorizationParams={{
-        audience: import.meta.env.VITE_AUTH0_AUDIENCE,
-        redirect_uri: window.location.origin,
-      }}
-    >
-      
-    </Auth0Provider>
+    <Routes>
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/" element={<AuthenticationGuard component={Index} />}>
+        <Route index Component={ConversationList}></Route>
+        <Route path="/contacts" Component={ContactList} />
+        <Route path="/people" Component={PeopleList} />
+      </Route>
+      <Route path="/callback" element={<CallbackPage />} />
+      <Route path="*" element={<NotFoundPage />} />
+    </Routes>
   );
 }
-
-export default App;

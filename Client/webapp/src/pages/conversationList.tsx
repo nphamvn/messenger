@@ -11,14 +11,11 @@ export default function ConversationList() {
   useEffect(() => {
     const fetchConversations = async () => {
       const accessToken = await getAccessTokenSilently();
-      const conversations = await fetch(
-        `${import.meta.env.VITE_BASE_CHAT_API_URL}/conversations`,
-        {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
+      const conversations = await fetch("api/conversations", {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
         },
-      ).then((res) => res.json() as Promise<IConversation[]>);
+      }).then((res) => res.json() as Promise<IConversation[]>);
       setConversations(conversations);
     };
     fetchConversations();
