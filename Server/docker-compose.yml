@@ -1,0 +1,18 @@
+﻿services:
+  db:
+    image: postgres:16.2-alpine
+    environment:
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+  
+  api:
+    image: api
+    build:
+      context: .
+      dockerfile: Api/Dockerfile
+
+volumes:
+    db-data:
