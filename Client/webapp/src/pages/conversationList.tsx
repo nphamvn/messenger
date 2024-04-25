@@ -11,7 +11,7 @@ export default function ConversationList() {
   useEffect(() => {
     const fetchConversations = async () => {
       const accessToken = await getAccessTokenSilently();
-      const conversations = await fetch("api/conversations", {
+      const conversations = await fetch("/api/conversations", {
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },
@@ -27,7 +27,7 @@ export default function ConversationList() {
       <ul className="mt-3 max-w-md divide-y divide-gray-200">
         {conversations.map((conversation) => (
           <li key={conversation.id} className="pb-3 sm:pb-4">
-            <Link to={conversation.id.toString()}>
+            <Link to={`c/${conversation.id}`}>
               <div className="flex items-center space-x-4 rtl:space-x-reverse">
                 <div className="flex-shrink-0">
                   <img

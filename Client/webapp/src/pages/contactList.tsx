@@ -27,7 +27,7 @@ export default function ContactList() {
       <ul className="mt-3 max-w-md divide-y divide-gray-200">
         {contacts.map((contact) => (
           <li key={contact.id} className="p-3">
-            <Link to={`/c/${contact.id}`} className="flex items-center">
+            <Link to={`c/${contact.id}`} className="flex items-center">
               <div className="me-2 flex-shrink-0">
                 <img
                   className="h-8 w-8 rounded-full"

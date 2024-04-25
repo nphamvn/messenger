@@ -9,9 +9,27 @@ import ConversationList from "./pages/conversationList";
 import ContactList from "./pages/contactList";
 import PeopleList from "./pages/peopleList";
 import Index from "./pages/Index";
+import { useEffect, useState } from "react";
+import IConversation from "./pages/IConversation";
+import ConversationContext from "./hooks/conversationContext";
 
 export default function App() {
-  const { isLoading } = useAuth0();
+  const { isLoading, isAuthenticated, getAccessTokenSilently } = useAuth0();
+  const [conversations, setConversations] = useState<IConversation[]>([]);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      const fetchConversations = async () => {
+        const accessToken = await getAccessTokenSilently();
+        fetch("/api/conversations", {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        })
+          .then((res) => res.json())
+          .then(setConversations);
+      };
+      fetchConversations();
+    }
+  }, [isAuthenticated]);
 
   if (isLoading) {
     return (
@@ -20,17 +38,23 @@ export default function App() {
       </div>
     );
   }
-
   return (
-    <Routes>
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/" element={<AuthenticationGuard component={Index} />}>
-        <Route index Component={ConversationList}></Route>
-        <Route path="/contacts" Component={ContactList} />
-        <Route path="/people" Component={PeopleList} />
-      </Route>
-      <Route path="/callback" element={<CallbackPage />} />
-      <Route path="*" element={<NotFoundPage />} />
-    </Routes>
+    <ConversationContext.Provider value={conversations}>
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/" element={<AuthenticationGuard component={Index} />}>
+          <Route path="" Component={ConversationList}>
+            <Route path="c/:conversationId" />
+          </Route>
+          <Route path="new" Component={ConversationList}></Route>
+          <Route path="/contacts" Component={ContactList}>
+            <Route path="c/:contactId" />
+          </Route>
+          <Route path="/people" Component={PeopleList} />
+        </Route>
+        <Route path="/callback" element={<CallbackPage />} />
+        <Route path="*" element={<NotFoundPage />} />
+      </Routes>
+    </ConversationContext.Provider>
   );
 }

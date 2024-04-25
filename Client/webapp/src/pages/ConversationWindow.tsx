@@ -1,7 +1,7 @@
 import { useContext, useEffect, useRef, useState } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
 import { useForm } from "react-hook-form";
-import { v4 as uuid } from "uuid";
+import { v4 as uuidv4 } from "uuid";
 import { Link, useParams } from "react-router-dom";
 import IConversation from "./IConversation";
 import ConnectionContext from "./connectionContext";
@@ -20,24 +20,15 @@ type MessageInput = {
   message: string;
 };
 
-const url: string = import.meta.env.VITE_BASE_CHAT_API_URL;
-
 export default function ConversationWindow({
+  contactId,
   conversationId,
 }: {
-  conversationId?: number;
+  contactId?: string;
+  conversationId?: string;
 }) {
   const { getAccessTokenSilently } = useAuth0();
-  const userId = useParams()["userId"]; // Get userId from URL for new conversation (when user clicks on a contact to start a new conversation)
-  console.log("userId", userId);
-
-  const conversationIdRef = useRef();
-
-  const conversation = useRef<IConversation>({
-    id: conversationId || 0,
-    lastMessage: "",
-    members: [],
-  });
+  const conversationRef = useRef<IConversation>();
 
   const [messages, messagesRef, setMessages] = useReferredState<IMessage[]>([]);
   const sortedMessages = messages.sort((a, b) => {
@@ -54,25 +45,28 @@ export default function ConversationWindow({
       if (conversationId) {
         console.log("Fetching messages for conversation", conversationId);
         messages = await fetch(
-          `${url}/conversations/${conversationId}/messages`,
+          `/api/conversations/${conversationId}/messages`,
           {
             headers: {
               Authorization: `Bearer ${accessToken}`,
             },
           }
         ).then((res) => res.json() as Promise<IMessage[]>);
-      } else if (userId) {
-        console.log("Fetching private conversation with user", userId);
-        const response = await fetch(`${url}/conversations/private/${userId}`, {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-        });
+      } else if (contactId) {
+        console.log("Fetching private conversation with user", contactId);
+        const response = await fetch(
+          `/api/conversations/private/${contactId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+            },
+          }
+        );
         if (response.ok) {
           const conversation = await response.json();
-          conversationIdRef.current = conversation.id;
+          conversationRef.current = conversation;
           messages = await fetch(
-            `${url}/conversations/${conversation.id}/messages`,
+            `/api/conversations/${conversation.id}/messages`,
             {
               headers: {
                 Authorization: `Bearer ${accessToken}`,
@@ -86,8 +80,14 @@ export default function ConversationWindow({
     fetchMessages();
   }, []);
 
-  const handleReceiveMessage = (_: IConversation, message: IMessage) => {
+  const handleReceiveMessage = (
+    conversation: IConversation,
+    message: IMessage
+  ) => {
     console.log("Received message", message);
+    if (!conversationRef.current) {
+      conversationRef.current = conversation;
+    }
     const msg = messagesRef.current.find(
       (m) => m.clientId === message.clientId
     );
@@ -131,7 +131,7 @@ export default function ConversationWindow({
       id: Math.max(...messagesRef.current.map((msg) => msg.id)) + 1,
       text: messageInput.message,
       createdAt: new Date().toString(),
-      clientId: uuid(),
+      clientId: uuidv4(),
       status: "sending",
       mine: true,
     };
@@ -139,9 +139,10 @@ export default function ConversationWindow({
     setMessages(newMessages);
     connection
       ?.invoke(
-        "SendChatMessage",
-        conversation.current?.id || null,
-        conversation.current?.members.map((m) => m.id).join(",") || null,
+        "SendMessage",
+        conversationRef.current?.id || null,
+        conversationRef.current?.members.map((m) => m.id).join(",") ||
+          [contactId].join(","),
         messageInput.message,
         newMessage.clientId
       )
@@ -168,11 +169,28 @@ export default function ConversationWindow({
       setTyping(false);
     }, 2000);
   };
-
+  const isFirstRun = useRef(true);
   useEffect(() => {
-    console.log("Typing changed", typing);
+    if (isFirstRun.current) {
+      isFirstRun.current = false;
+      return;
+    }
+    if (!connection) {
+      console.log("Connection not set");
+      return;
+    }
+    if (!conversationRef.current) {
+      console.log("Conversation not set");
+      return;
+    }
+    console.log(
+      "Sending typing indicator. Typing:",
+      typing,
+      "Conversation:",
+      conversationRef.current.id
+    );
     connection
-      ?.invoke("SendTypingIndicator", conversation.current?.id || null, typing)
+      .invoke("SendTypingIndicator", conversationRef.current.id, typing)
       .then(() => {
         console.log("Typing indicator sent");
       })
@@ -183,7 +201,6 @@ export default function ConversationWindow({
 
   return (
     <div className="max-w-2xl">
-      <Link to="..">Back</Link>
       <section className="container mx-auto flex max-h-96 flex-col-reverse overflow-y-auto p-4">
         {sortedMessages.map((message) => {
           if (message.mine) {

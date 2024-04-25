@@ -8,11 +8,11 @@ using Microsoft.EntityFrameworkCore;
 namespace Api.Messaging;
 
 [Authorize]
-public class ChatHub(AppDbContext dbContext, ILogger<ChatHub> logger) : Hub<IChatClient>
+public class ChatHub(AppDbContext dbContext, ILogger<ChatHub> logger) : Hub<IChatClient>, IChatServer
 {
     private static readonly ConnectionMapping<string> Connections = new();
     
-    public async Task SendChatMessage(
+    public async Task SendMessage(
         int? conversationId, 
         string? commaJoinedMembers, 
         string text, 
@@ -78,7 +78,7 @@ public class ChatHub(AppDbContext dbContext, ILogger<ChatHub> logger) : Hub<ICha
         {
             foreach (var connectionId in Connections.GetConnections(user.UserId))
             {
-                await Clients.Client(connectionId).ReceiveChatMessage(
+                await Clients.Client(connectionId).ReceiveMessage(
                     new
                     {
                         conversation.Id,

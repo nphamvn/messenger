@@ -1,6 +1,6 @@
 import { useAuth0 } from "@auth0/auth0-react";
 import { useEffect, useState } from "react";
-import { Outlet, useMatch } from "react-router-dom";
+import { Outlet, useMatch, useNavigate, useParams } from "react-router-dom";
 import ConnectionContext from "./connectionContext";
 import * as signalR from "@microsoft/signalr";
 import ConversationWindow from "./ConversationWindow";
@@ -34,10 +34,15 @@ export default function Index() {
     connect();
   }, []);
 
-  const [openingConversationId, setOpeningConversationId] = useState<number>();
-  const onConversationClick = (conversationId: number) => {};
   const isNewConversation = useMatch("/new");
-
+  const conversationId = useParams()["conversationId"];
+  const contactId = useParams()["contactId"];
+  console.log("conversationId", conversationId);
+  console.log("contactId", contactId);
+  const navigate = useNavigate();
+  const handleNewConversationClick = () => {
+    navigate("/new");
+  };
   return (
     <ConnectionContext.Provider value={connection}>
       <div className="flex h-screen">
@@ -46,8 +51,11 @@ export default function Index() {
           <Outlet />
         </div>
         <div className="flex-1">
-          {openingConversationId || newConversation || (
-            <ConversationWindow conversationId={openingConversationId} />
+          {(isNewConversation || conversationId || contactId) && (
+            <ConversationWindow
+              conversationId={conversationId}
+              contactId={contactId}
+            />
           )}
         </div>
       </div>
