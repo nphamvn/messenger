@@ -1,6 +1,6 @@
-using Api.Data;
 using Api.Endpoints;
 using Api.Messaging;
+using Core;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 
@@ -69,11 +69,14 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapGetConversations();
-app.MapGetPrivateConversation();
+app.MapGetOneToOneConversation();
 app.MapGetConversationMessages();
+
 app.MapPostContacts();
 app.MapGetContacts();
+
 app.MapGetPeople();
+
 app.MapChatHub();
 
 app.Run();

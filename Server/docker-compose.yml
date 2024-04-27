@@ -8,6 +8,12 @@
     volumes:
       - db-data:/var/lib/postgresql/data
   
+  db-migrator:
+    image: db-migrator
+    build:
+      context: .
+      dockerfile: DbMigrator/Dockerfile
+      
   api:
     image: api
     build:

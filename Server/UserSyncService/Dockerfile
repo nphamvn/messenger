@@ -5,17 +5,17 @@ WORKDIR /app
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
-COPY ["UserSync/UserSync.csproj", "UserSync/"]
-RUN dotnet restore "UserSync/UserSync.csproj"
+COPY ["UserSyncService/UserSyncService.csproj", "UserSyncService/"]
+RUN dotnet restore "UserSyncService/UserSyncService.csproj"
 COPY . .
-WORKDIR "/src/UserSync"
-RUN dotnet build "UserSync.csproj" -c $BUILD_CONFIGURATION -o /app/build
+WORKDIR "/src/UserSyncService"
+RUN dotnet build "UserSyncService.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish "UserSync.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
+RUN dotnet publish "UserSyncService.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
 
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
-ENTRYPOINT ["dotnet", "UserSync.dll"]
+ENTRYPOINT ["dotnet", "UserSyncService.dll"]

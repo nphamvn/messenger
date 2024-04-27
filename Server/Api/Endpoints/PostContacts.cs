@@ -1,8 +1,8 @@
 using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
-using Api.Data;
-using Api.Entities;
 using Api.Extensions;
+using Core;
+using Core.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace Api.Endpoints;

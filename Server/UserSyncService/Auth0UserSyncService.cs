@@ -60,9 +60,11 @@ public class Auth0UserSyncService(
             }
             logger.LogInformation("Getting job");
             job = await client.Jobs.GetAsync(job.Id, stoppingToken);
+            logger.LogInformation("Job status: {Status}", job.Status);
             
             if (job.Status == "completed")
             {
+                logger.LogInformation("Job completed");
                 break;
             }
             
@@ -79,7 +81,13 @@ public class Auth0UserSyncService(
         var zipFilePath = await DownloadAndSave(job.Location, $"users_{job.Id}.csv.gz");
         var csvFilePath = await ExtractFile(zipFilePath);
         var users = await ReadUsersFromCsvFile(csvFilePath);
+        await Import(stoppingToken, users);
+        File.Delete(zipFilePath);
+        File.Delete(csvFilePath);
+    }
 
+    private async Task Import(CancellationToken stoppingToken, DataTable users)
+    {
         await using var connection = new NpgsqlConnection(configuration.GetConnectionString("DefaultConnection"));
         await connection.OpenAsync(stoppingToken);
         await using var transaction = await connection.BeginTransactionAsync(stoppingToken);
@@ -122,9 +130,6 @@ public class Auth0UserSyncService(
             await connection.ExecuteAsync(upsertSql);
 
             await transaction.CommitAsync(stoppingToken);
-            
-            File.Delete(zipFilePath);
-            File.Delete(csvFilePath);
         }
         catch (Exception)
         {

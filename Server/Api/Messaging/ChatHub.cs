@@ -1,6 +1,6 @@
-using Api.Data;
-using Api.Entities;
 using Api.Extensions;
+using Core;
+using Core.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
@@ -90,8 +90,7 @@ public class ChatHub(AppDbContext dbContext, ILogger<ChatHub> logger) : Hub<ICha
                         message.SenderId,
                         message.Text,
                         message.CreatedAt,
-                        message.ClientId,
-                        Mine = user.UserId == userId
+                        message.ClientId
                     });
             }
         }

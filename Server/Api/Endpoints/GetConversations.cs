@@ -1,6 +1,6 @@
 using System.Security.Claims;
-using Api.Data;
 using Api.Extensions;
+using Core;
 using Microsoft.EntityFrameworkCore;
 
 namespace Api.Endpoints;
