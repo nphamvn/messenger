@@ -32,7 +32,7 @@ public static class GetOneToOneConversation
                     });
                 }
 
-                return Results.Ok();
+                return Results.NotFound();
             })
             .WithName("GetOneToOneConversation")
             .WithOpenApi()

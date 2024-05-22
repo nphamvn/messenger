@@ -18,7 +18,7 @@ public class ChatHub(AppDbContext dbContext, ILogger<ChatHub> logger) : Hub<ICha
         string text, 
         string? clientMessageId = null)
     {
-        logger.LogInformation("SendChatMessage: {ConversationId}, {CommaJoinedMembers}, {Text}, {ClientMessageId}", 
+        logger.LogInformation("SendChatMessage: {ConversationId}, {CommaJoinedMembers}, {Text}, {ClientMessageId}",
             conversationId, commaJoinedMembers, text, clientMessageId);
         
         if (conversationId == null && commaJoinedMembers == null)
@@ -27,6 +27,8 @@ public class ChatHub(AppDbContext dbContext, ILogger<ChatHub> logger) : Hub<ICha
         }
         
         var userId = Context.User!.GetUserId();
+        var memberIds = commaJoinedMembers!.Split(",")
+            .Where(m => m != userId).ToList();
         Conversation conversation;
         if (conversationId is not null)
         {
@@ -36,8 +38,6 @@ public class ChatHub(AppDbContext dbContext, ILogger<ChatHub> logger) : Hub<ICha
         }
         else
         {
-            var memberIds = commaJoinedMembers!.Split(",")
-                                        .Where(m => m != userId).ToList();
             var members = await dbContext.Users
                 .Where(u => memberIds.Contains(u.Id))
                 .Select(u => u.Id).ToListAsync();
@@ -69,7 +69,14 @@ public class ChatHub(AppDbContext dbContext, ILogger<ChatHub> logger) : Hub<ICha
             await dbContext.SaveChangesAsync();
         }
         
-        var message = Map();
+        var message = new Message
+        {
+            SenderId = userId,
+            Conversation = conversation,
+            Text = text,
+            ClientId = clientMessageId,
+            CreatedAt = DateTime.UtcNow
+        };
 
         await dbContext.Messages.AddAsync(message);
         await dbContext.SaveChangesAsync();
@@ -93,20 +100,6 @@ public class ChatHub(AppDbContext dbContext, ILogger<ChatHub> logger) : Hub<ICha
                         message.ClientId
                     });
             }
-        }
-        
-        return;
-
-        Message Map()
-        {
-            return new Message
-            {
-                SenderId = userId,
-                Conversation = conversation,
-                Text = text,
-                ClientId = clientMessageId,
-                CreatedAt = DateTime.UtcNow
-            };
         }
     }
 

@@ -21,32 +21,30 @@ export default function ConversationList() {
   }, []);
 
   return (
-    <div>
-      <ul className="mt-3 max-w-md divide-y divide-gray-200">
-        {conversations.map((conversation) => (
-          <li key={conversation.id} className="pb-3 sm:pb-4">
-            <Link to={`c/${conversation.id}`}>
-              <div className="flex items-center space-x-4 rtl:space-x-reverse">
-                <div className="flex-shrink-0">
-                  <img
-                    className="h-8 w-8 rounded-full"
-                    src={conversation.members[0].picture}
-                    alt={conversation.members[0].fullName}
-                  />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-gray-900 dark:text-white">
-                    {conversation.members[0].fullName}
-                  </p>
-                  <p className="truncate text-sm text-gray-500 dark:text-gray-400">
-                    {conversation.lastMessage}
-                  </p>
-                </div>
+    <ul className="max-w-md divide-y divide-gray-200">
+      {conversations.map((conversation) => (
+        <li key={conversation.id} className="pb-3 sm:pb-4">
+          <Link to={`c/${conversation.id}`}>
+            <div className="flex items-center space-x-4 rtl:space-x-reverse">
+              <div className="flex-shrink-0">
+                <img
+                  className="h-8 w-8 rounded-full"
+                  src={conversation.members[0].picture}
+                  alt={conversation.members[0].fullName}
+                />
               </div>
-            </Link>
-          </li>
-        ))}
-      </ul>
-    </div>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium text-gray-900 dark:text-white">
+                  {conversation.members[0].fullName}
+                </p>
+                <p className="truncate text-sm text-gray-500 dark:text-gray-400">
+                  {conversation.lastMessage}
+                </p>
+              </div>
+            </div>
+          </Link>
+        </li>
+      ))}
+    </ul>
   );
 }

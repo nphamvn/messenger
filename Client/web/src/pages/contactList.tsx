@@ -22,27 +22,25 @@ export default function ContactList() {
   }, []);
 
   return (
-    <div>
-      <ul className="mt-3 max-w-md divide-y divide-gray-200">
-        {contacts.map((contact) => (
-          <li key={contact.id} className="p-3">
-            <Link to={`o2o/${contact.id}`} className="flex items-center">
-              <div className="me-2 flex-shrink-0">
-                <img
-                  className="h-8 w-8 rounded-full"
-                  src={contact.picture}
-                  alt={contact.fullName}
-                />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium text-gray-900 ">
-                  {contact.fullName}
-                </p>
-              </div>
-            </Link>
-          </li>
-        ))}
-      </ul>
-    </div>
+    <ul className="max-w-md divide-y divide-gray-200">
+      {contacts.map((contact) => (
+        <li key={contact.id} className="p-3">
+          <Link to={`o2o/${contact.id}`} className="flex items-center">
+            <div className="me-2 flex-shrink-0">
+              <img
+                className="h-8 w-8 rounded-full"
+                src={contact.picture}
+                alt={contact.fullName}
+              />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium text-gray-900 ">
+                {contact.fullName}
+              </p>
+            </div>
+          </Link>
+        </li>
+      ))}
+    </ul>
   );
 }

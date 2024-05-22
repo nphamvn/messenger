@@ -14,7 +14,8 @@ import IConversation from "./models/IConversation";
 import ConversationContext from "./hooks/conversationContext";
 
 export default function App() {
-  const { isLoading, isAuthenticated, user, getAccessTokenSilently } = useAuth0();
+  const { isLoading, isAuthenticated, user, getAccessTokenSilently } =
+    useAuth0();
   const [conversations, setConversations] = useState<IConversation[]>([]);
 
   useEffect(() => {
@@ -32,10 +33,10 @@ export default function App() {
   }, [isAuthenticated]);
 
   useEffect(() => {
-    if(isAuthenticated) {
+    if (isAuthenticated) {
       console.log("User is authenticated", user);
     }
-   }, [isAuthenticated]);
+  }, [isAuthenticated]);
 
   if (isLoading) {
     return (

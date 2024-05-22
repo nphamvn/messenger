@@ -4,7 +4,6 @@ import {
   Link,
   Outlet,
   useMatch,
-  useNavigate,
   useParams,
 } from "react-router-dom";
 import ConnectionContext from "./connectionContext";
@@ -43,19 +42,13 @@ export default function Index() {
   const isNewConversation = useMatch("/new");
   const conversationId = useParams()["conversationId"];
   const contactId = useParams()["contactId"];
-  console.log("conversationId", conversationId);
-  console.log("contactId", contactId);
-  const navigate = useNavigate();
-  const handleNewConversationClick = () => {
-    navigate("/new");
-  };
   const isIndex = useMatch("/");
   const isContacts = useMatch("/contacts");
   const isPeople = useMatch("/people");
   return (
     <ConnectionContext.Provider value={connection}>
       <div className="flex h-screen">
-        <div className="flex flex-col">
+        <div className="flex flex-col border">
           <Link to="/" className={isIndex ? "text-blue-500 underline" : ""}>
             Conversations
           </Link>
@@ -72,11 +65,10 @@ export default function Index() {
             People
           </Link>
         </div>
-        <div className="text-white w-64 flex-shrink-0">
-          <button onClick={handleNewConversationClick}>New</button>
+        <div className="text-white w-64 flex-shrink-0 border">
           <Outlet />
         </div>
-        <div className="flex-1">
+        <div className="flex-1 border">
           {(isNewConversation || conversationId || contactId) && (
             <ConversationWindow
               conversationId={conversationId}

@@ -42,7 +42,7 @@ export default function PeopleList() {
 
   return (
     <div>
-      <ul className="mt-3 max-w-md divide-y divide-gray-200">
+      <ul className="max-w-md divide-y divide-gray-200">
         {people.map((person) => (
           <li key={person.id} className="p-3">
             <div className="flex items-center">

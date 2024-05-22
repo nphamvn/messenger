@@ -45,14 +45,11 @@ export default function ConversationWindow({
         ).then((res) => res.json() as Promise<IMessage[]>);
       } else if (contactId) {
         console.log("Fetching private conversation with user", contactId);
-        const response = await fetch(
-          `/api/conversations/private/${contactId}`,
-          {
-            headers: {
-              Authorization: `Bearer ${accessToken}`,
-            },
-          }
-        );
+        const response = await fetch(`/api/conversations/o2o/${contactId}`, {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        });
         if (response.ok) {
           const conversation = await response.json();
           conversationRef.current = conversation;
@@ -158,7 +155,7 @@ export default function ConversationWindow({
     console.log("Setting timer");
     timer.current = window.setTimeout(() => {
       setTyping(false);
-    }, 2000);
+    }, 1500);
   };
   const isFirstRun = useRef(true);
   useEffect(() => {
@@ -191,7 +188,7 @@ export default function ConversationWindow({
   }, [typing]);
 
   return (
-    <div className="max-w-2xl">
+    <>
       <section className="container mx-auto flex max-h-96 flex-col-reverse overflow-y-auto p-4">
         {sortedMessages.map((message) => {
           if (message.senderId === user!.sub!) {
@@ -219,14 +216,12 @@ export default function ConversationWindow({
           }
         })}
       </section>
-      <form onSubmit={handleSubmit(onSubmit)} className="absolute bottom-0">
-        <div className="flex space-x-1">
-          <div
-            id="typingIndicator"
-            style={{ display: typing ? "block" : "none" }}
-          >
-            Typing...
-          </div>
+      {/* <form
+        onSubmit={handleSubmit(onSubmit)}
+        className="absolute bottom-0 w-full"
+      >
+        <div className="flex space-x-1 w-full">
+          <div style={{ display: typing ? "block" : "none" }}>Typing...</div>
           <input
             type="text"
             {...register("message", { required: true })}
@@ -237,7 +232,7 @@ export default function ConversationWindow({
             Send
           </button>
         </div>
-      </form>
-    </div>
+      </form> */}
+    </>
   );
 }
