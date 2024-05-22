@@ -19,7 +19,8 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "package": "com.messenger.mobile"
     },
     "web": {
       "bundler": "metro",
@@ -27,7 +28,13 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
-      "expo-router"
+      "expo-router",
+      [
+        "react-native-auth0",
+        {
+          "domain": "dev-vzxphouz.us.auth0.com"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
