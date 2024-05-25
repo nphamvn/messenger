@@ -26,7 +26,7 @@ public static class GetConversations
                 {
                     c.Id,
                     c.Name,
-                    LastMessage = c.Messages.FirstOrDefault()?.Text,
+                    LastMessage = c.Messages.FirstOrDefault(),
                     c.CreatedAt,
                     Members = c.Users.Where(u => u.UserId != userId).Select(u => new
                     {
