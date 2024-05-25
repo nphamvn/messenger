@@ -22,18 +22,30 @@ public static class GetConversations
                     .Where(c => c.Users.Any(u => u.UserId == userId))
                     .ToListAsync();
 
-                return conversations.Select(c => new
+                return conversations.Select(c =>
                 {
-                    c.Id,
-                    c.Name,
-                    LastMessage = c.Messages.FirstOrDefault(),
-                    c.CreatedAt,
-                    Members = c.Users.Where(u => u.UserId != userId).Select(u => new
+                    var lastMessage = c.Messages.FirstOrDefault();
+                    return new
                     {
-                        Id = u.UserId,
-                        u.User.FullName,
-                        u.User.Picture
-                    })
+                        c.Id,
+                        c.Name,
+                        LastMessage = lastMessage != null
+                            ? new
+                            {
+                                lastMessage.Id,
+                                lastMessage.Text,
+                                lastMessage.CreatedAt,
+                                lastMessage.SenderId
+                            }
+                            : null,
+                        c.CreatedAt,
+                        Members = c.Users.Where(u => u.UserId != userId).Select(u => new
+                        {
+                            Id = u.UserId,
+                            u.User.FullName,
+                            u.User.Picture
+                        })
+                    };
                 });
             })
             .WithName("GetConversations")
