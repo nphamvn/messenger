@@ -22,5 +22,11 @@
     ports:
       - "8080:8080"
 
+  user-sync:
+    image: user-sync
+    build:
+      context: .
+      dockerfile: UserSyncService/Dockerfile
+
 volumes:
     db-data:
