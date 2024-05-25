@@ -26,7 +26,7 @@ public static class GetConversation
                     conversation.Id,
                     conversation.Name,
                     conversation.CreatedAt,
-                    Members = conversation.Users.Where(u => u.UserId != userId).Select(u => new
+                    Members = conversation.Users.Select(u => new
                     {
                         Id = u.UserId,
                         u.User.FullName,
