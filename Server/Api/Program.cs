@@ -68,6 +68,7 @@ app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 
+app.MapGetConversation();
 app.MapGetConversations();
 app.MapGetOneToOneConversation();
 app.MapGetConversationMessages();
