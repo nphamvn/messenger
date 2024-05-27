@@ -12,7 +12,7 @@ import {
 import Contact, { SearchPerson } from "../../models/Contact";
 import { useAuth0 } from "react-native-auth0";
 import { router } from "expo-router";
-import { appConfig } from "../../constants/constants";
+import { appConfig } from "../../constants/appConfig";
 
 export default function ContactsScreen() {
   const { getCredentials } = useAuth0();

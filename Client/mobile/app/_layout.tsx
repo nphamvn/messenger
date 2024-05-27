@@ -5,7 +5,7 @@ import { useAuth0, Auth0Provider } from "react-native-auth0";
 import LoginScreen from "./login";
 import ConnectionContext from "../hooks/ConnectionContext";
 import * as signalR from "@microsoft/signalr";
-import { appConfig } from "../constants/constants";
+import { appConfig } from "../constants/appConfig";
 import { RealmProvider, useQuery, useRealm } from "@realm/react";
 import { schemas } from "../schemas";
 import { Message } from "../schemas/Message";

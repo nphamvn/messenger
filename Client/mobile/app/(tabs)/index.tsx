@@ -10,7 +10,7 @@ import {
 import { Conversation } from "../../models/Conversation";
 import { router } from "expo-router";
 import { useAuth0 } from "react-native-auth0";
-import { appConfig } from "../../constants/constants";
+import { appConfig } from "../../constants/appConfig";
 
 export default function ConversationsScreen() {
   const { getCredentials } = useAuth0();
