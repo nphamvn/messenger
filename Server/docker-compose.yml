@@ -13,7 +13,9 @@
     build:
       context: .
       dockerfile: DbMigrator/Dockerfile
-      
+    depends_on:
+      - db  
+  
   api:
     image: api
     build:
@@ -27,6 +29,8 @@
     build:
       context: .
       dockerfile: UserSyncService/Dockerfile
+    depends_on:
+      - db
 
 volumes:
     db-data:
