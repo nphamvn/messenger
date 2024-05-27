@@ -24,3 +24,13 @@ updates:
     directory: "Server/UserSyncService"
     schedule:
       interval: "daily"
+      
+  - package-ecosystem: "npm"
+    directory: "Client/mobile"
+    schedule:
+      interval: "daily"
+
+  - package-ecosystem: "npm"
+    directory: "Client/web"
+    schedule:
+      interval: "daily"
