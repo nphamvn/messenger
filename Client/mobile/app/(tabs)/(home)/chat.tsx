@@ -14,14 +14,14 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
 } from "react-native";
-import Message from "../../models/Message";
-import { Conversation } from "../../models/Conversation";
+import Message from "../../../models/Message";
+import { Conversation } from "../../../models/Conversation";
 import { useAuth0 } from "react-native-auth0";
-import ConnectionContext from "../../hooks/ConnectionContext";
-import { appConfig } from "../../constants/appConfig";
+import ConnectionContext from "../../../hooks/ConnectionContext";
+import { appConfig } from "../../../constants/appConfig";
 import uuid from "react-native-uuid";
 import { useRealm } from "@realm/react";
-import { Message as MessageSchema } from "../../schemas/Message";
+import { Message as MessageSchema } from "../../../schemas/Message";
 
 export default function ChatScreen() {
   const { getCredentials, user } = useAuth0();

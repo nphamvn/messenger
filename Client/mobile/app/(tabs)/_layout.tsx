@@ -4,7 +4,7 @@ export default function Layout() {
   return (
     <Tabs>
       <Tabs.Screen
-        name="index"
+        name="(home)"
         options={{
           title: "Conversations",
           headerShown: false,

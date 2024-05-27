@@ -9,8 +9,10 @@ import { appConfig } from "../constants/appConfig";
 import { RealmProvider, useQuery, useRealm } from "@realm/react";
 import { schemas } from "../schemas";
 import { Message } from "../schemas/Message";
+import { BSON } from "realm";
 
 const Navigator = () => {
+  const realm = useRealm();
   const { user, isLoading, getCredentials } = useAuth0();
   const [connection, setConnection] = useState<signalR.HubConnection | null>(
     null
@@ -49,6 +51,19 @@ const Navigator = () => {
           console.log("Connection reconnected");
           setConnected(true);
         });
+
+        connection.on("ReceiveMessage", (conversation, message) => {
+          const clientId = message.clientId;
+          const localMessage = realm.objectForPrimaryKey(
+            Message,
+            new BSON.ObjectId(clientId)
+          );
+          if (localMessage) {
+            realm.write(() => {
+              localMessage.status = "sent";
+            });
+          }
+        });
         setConnection(connection);
       })();
     }
@@ -63,10 +78,10 @@ const Navigator = () => {
             message.conversationId,
             message.userId ? [message.userId].join(",") : "",
             message.text,
-            null
+            message._id.toString()
           )
           .then(() => {
-            console.log("Message sent");
+            console.log("Message sent. Id: ", message._id);
           })
           .catch((error) => {
             console.error("Error sending message: ", error);

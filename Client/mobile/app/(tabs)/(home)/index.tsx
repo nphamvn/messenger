@@ -7,10 +7,10 @@ import {
   Pressable,
   SafeAreaView,
 } from "react-native";
-import { Conversation } from "../../models/Conversation";
-import { router } from "expo-router";
+import { Link, router } from "expo-router";
 import { useAuth0 } from "react-native-auth0";
-import { appConfig } from "../../constants/appConfig";
+import { Conversation } from "../../../models/Conversation";
+import { appConfig } from "../../../constants/appConfig";
 
 export default function ConversationsScreen() {
   const { getCredentials } = useAuth0();
@@ -25,6 +25,7 @@ export default function ConversationsScreen() {
         },
       });
       const data = await response.json();
+      console.log("conversations: ", JSON.stringify(data, null, 2));
       setConversations(data);
     })();
   }, []);
@@ -38,7 +39,7 @@ export default function ConversationsScreen() {
             <Pressable
               onPress={() =>
                 router.push({
-                  pathname: "conversation/chat",
+                  pathname: "./chat",
                   params: {
                     conversationId: item.id,
                   },

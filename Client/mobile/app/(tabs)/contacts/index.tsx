@@ -9,10 +9,10 @@ import {
   Pressable,
   TextInput,
 } from "react-native";
-import Contact, { SearchPerson } from "../../models/Contact";
 import { useAuth0 } from "react-native-auth0";
 import { router } from "expo-router";
-import { appConfig } from "../../constants/appConfig";
+import Contact, { SearchPerson } from "../../../models/Contact";
+import { appConfig } from "../../../constants/appConfig";
 
 export default function ContactsScreen() {
   const { getCredentials } = useAuth0();
