@@ -1,4 +1,4 @@
-import { useLocalSearchParams } from "expo-router";
+import { Stack, useLocalSearchParams } from "expo-router";
 import { useContext, useEffect, useRef, useState } from "react";
 import {
   View,
@@ -19,7 +19,6 @@ import { Conversation } from "../../../models/Conversation";
 import { useAuth0 } from "react-native-auth0";
 import ConnectionContext from "../../../hooks/ConnectionContext";
 import { appConfig } from "../../../constants/appConfig";
-import uuid from "react-native-uuid";
 import { useRealm } from "@realm/react";
 import { Message as MessageSchema } from "../../../schemas/Message";
 
@@ -89,7 +88,7 @@ export default function ChatScreen() {
 
   useEffect(() => {
     connection.on("ReceiveMessage", (message: Message) => {
-      console.log("Received message: ", message);
+      console.log("Chat.tsx: Received message: ", message);
     });
 
     return () => {
@@ -98,7 +97,7 @@ export default function ChatScreen() {
   }, []);
 
   const sendMessage = async () => {
-    realm.write(() => {
+    const localMessage = realm.write(() => {
       return realm.create(MessageSchema, {
         text: text,
         status: "notSent",
@@ -106,39 +105,30 @@ export default function ChatScreen() {
         userId: userId ? userId : null,
       });
     });
+
+    console.log("Chat.tsx: Sending message: ", JSON.stringify(localMessage));
     const message: Message = {
       id: 0,
       text: text,
       senderId: me?.id!,
       createdAt: new Date().toDateString(),
-      clientId: uuid.v4().toString(),
+      clientId: localMessage._id.toString(),
     };
 
-    // connection
-    //   .invoke(
-    //     "SendMessage",
-    //     conversationId ? parseInt(conversationId) : null,
-    //     userId
-    //       ? [userId].join(",")
-    //       : conversation?.members.map((m) => m.id).join(","),
-    //     text,
-    //     null
-    //   )
-    //   .then(() => {
-    //     console.log("Message sent");
-    //   })
-    //   .catch((error) => {
-    //     console.error("Error sending message: ", error);
-    //   })
-    //   .finally(() => {
-    //     setText("");
-    //     messageInputRef.current?.focus();
-
-    //     setMessages([...messages, message]);
-    //   });
+    setText("");
+    messageInputRef.current?.focus();
+    setMessages([...messages, message]);
   };
   return (
     <SafeAreaView style={{ flex: 1 }}>
+      <Stack.Screen
+        options={{
+          title: conversation?.members
+            .filter((m) => m.id !== user?.sub)
+            .map((m) => m.fullName)
+            .join(", "),
+        }}
+      />
       <View style={{ flex: 1, padding: 20, backgroundColor: "#fff" }}>
         <FlatList
           data={messages}

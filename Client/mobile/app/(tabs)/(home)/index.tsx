@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -6,8 +6,9 @@ import {
   Image,
   Pressable,
   SafeAreaView,
+  RefreshControl,
 } from "react-native";
-import { Link, router } from "expo-router";
+import { router } from "expo-router";
 import { useAuth0 } from "react-native-auth0";
 import { Conversation } from "../../../models/Conversation";
 import { appConfig } from "../../../constants/appConfig";
@@ -16,17 +17,30 @@ export default function ConversationsScreen() {
   const { getCredentials } = useAuth0();
   const [conversations, setConversations] = useState<Conversation[]>([]);
 
+  const [refreshing, setRefreshing] = useState(false);
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    (async () => {
+      await fetchConversations();
+      setRefreshing(false);
+    })();
+  }, []);
+
+  const fetchConversations = async () => {
+    const credentials = await getCredentials();
+    const response = await fetch(`${appConfig.API_URL}/conversations`, {
+      headers: {
+        Authorization: `Bearer ${credentials?.accessToken}`,
+      },
+    });
+    const data = await response.json();
+    setConversations(data);
+  };
+
   useEffect(() => {
     (async () => {
-      const credentials = await getCredentials();
-      const response = await fetch(`${appConfig.API_URL}/conversations`, {
-        headers: {
-          Authorization: `Bearer ${credentials?.accessToken}`,
-        },
-      });
-      const data = await response.json();
-      console.log("conversations: ", JSON.stringify(data, null, 2));
-      setConversations(data);
+      await fetchConversations();
     })();
   }, []);
 
@@ -34,6 +48,9 @@ export default function ConversationsScreen() {
     <SafeAreaView style={{ flex: 1 }}>
       <View style={{ flex: 1, padding: 20, backgroundColor: "#fff" }}>
         <FlatList
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
           data={conversations}
           renderItem={({ item }) => (
             <Pressable
@@ -51,8 +68,8 @@ export default function ConversationsScreen() {
                   flexDirection: "row",
                   marginBottom: 10,
                   alignItems: "center",
-                  borderBottomColor: "gray",
-                  borderBottomWidth: 1,
+                  borderBottomColor: "#ddd",
+                  borderBottomWidth: 0.5,
                   paddingBottom: 10,
                 }}
               >
