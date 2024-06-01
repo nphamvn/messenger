@@ -41,6 +41,11 @@ public class ChatHub(AppDbContext dbContext, ILogger<ChatHub> logger) : Hub<ICha
             var members = await dbContext.Users
                 .Where(u => memberIds.Contains(u.Id))
                 .Select(u => u.Id).ToListAsync();
+
+            if (members.Count == 0)
+            {
+                throw new Exception("No members found");
+            }
             
             conversation = new Conversation
             {
