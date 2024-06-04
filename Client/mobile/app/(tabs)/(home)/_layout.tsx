@@ -1,4 +1,4 @@
-import { Stack } from "expo-router";
+import { Link, Stack } from "expo-router";
 
 export default function Layout() {
   return (
@@ -7,6 +7,23 @@ export default function Layout() {
         name="index"
         options={{
           title: "Conversations",
+        }}
+      />
+      <Stack.Screen
+        name="new"
+        options={{
+          title: "New Conversation",
+          presentation: "modal",
+          headerLeft: () => (
+            <Link
+              href=".."
+              style={{
+                color: "#007AFF",
+              }}
+            >
+              Cancel
+            </Link>
+          ),
         }}
       />
     </Stack>

@@ -1,95 +1,24 @@
-import { Stack } from "expo-router";
+import { Stack, usePathname } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { View, Text } from "react-native";
 import { useAuth0, Auth0Provider } from "react-native-auth0";
-import LoginScreen from "./login";
 import ConnectionContext from "../hooks/ConnectionContext";
-import * as signalR from "@microsoft/signalr";
-import { appConfig } from "../constants/appConfig";
-import { RealmProvider, useQuery, useRealm } from "@realm/react";
+
+import { RealmProvider } from "@realm/react";
 import { schemas } from "../schemas";
-import { Message } from "../schemas/Message";
-import { BSON } from "realm";
+import useMessaging from "../hooks/messaging";
 
 const Navigator = () => {
-  const realm = useRealm();
-  const { user, isLoading, getCredentials } = useAuth0();
-  const [connection, setConnection] = useState<signalR.HubConnection | null>(
-    null
-  );
-  const [connected, setConnected] = useState(false);
-  const notSentMessages = useQuery(Message).filtered("status = 'notSent'");
+  const { user, isLoading } = useAuth0();
+  useMessaging();
+
+  const path = usePathname();
+  useEffect(() => {
+    console.log("path: ", path);
+  }, [path]);
 
   const isAuthenticated = user !== undefined && user !== null;
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      (async () => {
-        const { accessToken } = (await getCredentials())!;
-        const connection = new signalR.HubConnectionBuilder()
-          .withUrl(`${appConfig.API_URL}/chat`, {
-            accessTokenFactory: () => accessToken,
-            skipNegotiation: true,
-            transport: signalR.HttpTransportType.WebSockets,
-          })
-          .withAutomaticReconnect()
-          .build();
-        connection?.start().then(() => {
-          console.log("Connection started");
-          setConnected(true);
-        });
-        connection.onclose((error) => {
-          console.log("Connection closed", error);
-          setConnected(false);
-        });
-        connection.onreconnecting(() => {
-          console.log("Connection reconnecting");
-          setConnected(false);
-        });
-
-        connection.onreconnected(() => {
-          console.log("Connection reconnected");
-          setConnected(true);
-        });
-
-        connection.on("ReceiveMessage", (conversation, message) => {
-          const clientId = message.clientId;
-          const localMessage = realm.objectForPrimaryKey(
-            Message,
-            new BSON.ObjectId(clientId)
-          );
-          if (localMessage) {
-            realm.write(() => {
-              localMessage.status = "sent";
-            });
-          }
-        });
-        setConnection(connection);
-      })();
-    }
-  }, [isAuthenticated]);
-
-  useEffect(() => {
-    if (connected && notSentMessages.length > 0) {
-      notSentMessages.forEach((message: Message) => {
-        connection
-          ?.invoke(
-            "SendMessage",
-            message.conversationId,
-            message.userId ? [message.userId].join(",") : "",
-            message.text,
-            message._id.toString()
-          )
-          .then(() => {
-            console.log("Message sent. Id: ", message._id);
-          })
-          .catch((error) => {
-            console.error("Error sending message: ", error);
-          })
-          .finally(() => {});
-      });
-    }
-  }, [connected, notSentMessages]);
   if (isLoading) {
     return (
       <View>
@@ -99,25 +28,19 @@ const Navigator = () => {
   }
 
   return (
-    <ConnectionContext.Provider value={connection}>
-      {isAuthenticated ? (
-        <Stack>
-          <Stack.Screen
-            name="(tabs)"
-            options={{ headerShown: false }}
-          ></Stack.Screen>
-        </Stack>
-      ) : (
-        <LoginScreen />
+    <Stack>
+      {isAuthenticated && (
+        <Stack.Screen
+          name="(tabs)"
+          options={{ headerShown: false }}
+        ></Stack.Screen>
       )}
-    </ConnectionContext.Provider>
+      <Stack.Screen name="login" />
+    </Stack>
   );
 };
 
 export default function RootLayout() {
-  useEffect(() => {
-    console.log("RootLayout");
-  }, []);
   return (
     <Auth0Provider
       domain="dev-vzxphouz.us.auth0.com"

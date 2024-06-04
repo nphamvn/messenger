@@ -8,14 +8,19 @@ import {
   SafeAreaView,
   RefreshControl,
 } from "react-native";
-import { router } from "expo-router";
+import { Link, Stack, router, usePathname } from "expo-router";
 import { useAuth0 } from "react-native-auth0";
 import { Conversation } from "../../../models/Conversation";
 import { appConfig } from "../../../constants/appConfig";
+import { ConversationSchema } from "../../../schemas/ConversationSchema";
+import { useQuery } from "@realm/react";
+import React from "react";
 
 export default function ConversationsScreen() {
+  const path = usePathname();
   const { getCredentials } = useAuth0();
-  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [, setConversations] = useState<Conversation[]>([]);
+  const localConversations = useQuery(ConversationSchema);
 
   const [refreshing, setRefreshing] = useState(false);
 
@@ -44,51 +49,72 @@ export default function ConversationsScreen() {
     })();
   }, []);
 
+  console.log("path: ", path);
   return (
-    <SafeAreaView style={{ flex: 1 }}>
-      <View style={{ flex: 1, padding: 20, backgroundColor: "#fff" }}>
-        <FlatList
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-          }
-          data={conversations}
-          renderItem={({ item }) => (
-            <Pressable
-              onPress={() =>
-                router.push({
-                  pathname: "./chat",
-                  params: {
-                    conversationId: item.id,
-                  },
-                })
-              }
+    <React.Fragment>
+      <Stack.Screen
+        options={{
+          headerRight: () => (
+            <Link
+              href="new"
+              style={{
+                color: "#007AFF",
+              }}
             >
-              <View
-                style={{
-                  flexDirection: "row",
-                  marginBottom: 10,
-                  alignItems: "center",
-                  borderBottomColor: "#ddd",
-                  borderBottomWidth: 0.5,
-                  paddingBottom: 10,
-                }}
+              New
+            </Link>
+          ),
+        }}
+      />
+      <SafeAreaView style={{ flex: 1 }}>
+        <View style={{ flex: 1, padding: 20, backgroundColor: "#fff" }}>
+          <FlatList
+            refreshControl={
+              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+            }
+            data={localConversations}
+            renderItem={({ item }) => (
+              <Pressable
+                onPress={() =>
+                  router.push({
+                    pathname: "/conversation",
+                    params: {
+                      cId: item.cId.toString(),
+                    },
+                  })
+                }
               >
-                <Image
-                  source={{ uri: item.members[0]?.picture }}
-                  style={{ height: 40, width: 40, borderRadius: 20 }}
-                />
-                <View style={{ marginLeft: 4 }}>
-                  <Text>{item.members[0]?.fullName}</Text>
-                  <Text style={{ marginTop: 2 }}>{item.lastMessage.text}</Text>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    marginBottom: 10,
+                    alignItems: "center",
+                    borderBottomColor: "#ddd",
+                    borderBottomWidth: 0.5,
+                    paddingBottom: 10,
+                  }}
+                >
+                  <Image
+                    source={{ uri: item.users[0]?.picture }}
+                    style={{ height: 40, width: 40, borderRadius: 20 }}
+                  />
+                  <View style={{ marginLeft: 4 }}>
+                    <Text>{item.users[0]?.fullName}</Text>
+                    <Text style={{ marginTop: 2 }}>
+                      {item.messages[item.messages.length - 1]?.text}
+                    </Text>
+                  </View>
+                  <Text style={{ marginStart: "auto" }}>
+                    {new Date(
+                      item.messages[item.messages.length - 1]?.createdAt
+                    ).toLocaleDateString()}
+                  </Text>
                 </View>
-                <Text style={{ marginStart: "auto" }}>
-                  {new Date(item.lastMessage.createdAt).toLocaleDateString()}
-                </Text>
-              </View>
-            </Pressable>
-          )}
-        ></FlatList>
-      </View>
-    </SafeAreaView>
+              </Pressable>
+            )}
+          ></FlatList>
+        </View>
+      </SafeAreaView>
+    </React.Fragment>
   );
 }

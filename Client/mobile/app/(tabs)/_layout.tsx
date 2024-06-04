@@ -1,4 +1,7 @@
 import { Tabs } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { AntDesign } from "@expo/vector-icons";
+import { Feather } from "@expo/vector-icons";
 
 export default function Layout() {
   return (
@@ -6,25 +9,31 @@ export default function Layout() {
       <Tabs.Screen
         name="(home)"
         options={{
-          title: "Conversations",
           headerShown: false,
           tabBarLabel: "Conversations",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="chatbox" size={size} color={color} />
+          ),
         }}
       ></Tabs.Screen>
       <Tabs.Screen
         name="contacts"
         options={{
-          title: "Contacts",
           headerShown: false,
           tabBarLabel: "Contacts",
+          tabBarIcon: ({ color, size }) => (
+            <AntDesign name="contacts" size={size} color={color} />
+          ),
         }}
       ></Tabs.Screen>
       <Tabs.Screen
         name="settings"
         options={{
-          title: "Settings",
           headerShown: false,
           tabBarLabel: "Settings",
+          tabBarIcon: ({ color, size }) => (
+            <Feather name="settings" size={size} color={color} />
+          ),
         }}
       ></Tabs.Screen>
     </Tabs>

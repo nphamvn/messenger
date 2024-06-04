@@ -125,9 +125,9 @@ export default function ContactsScreen() {
             <Pressable
               onPress={() => {
                 router.push({
-                  pathname: "conversation/chat",
+                  pathname: "/conversation",
                   params: {
-                    userId: item.id,
+                    uId: item.id,
                   },
                 });
               }}
