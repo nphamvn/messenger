@@ -33,7 +33,6 @@ public static class GetConversationMessages
                     m.ConversationId,
                     m.Text,
                     m.CreatedAt,
-                    m.ClientId,
                     Mine = m.SenderId == userId
                 });
             })

@@ -13,22 +13,22 @@ public class ChatHub(AppDbContext dbContext, ILogger<ChatHub> logger) : Hub<ICha
     private static readonly ConnectionMapping<string> Connections = new();
     
     public async Task SendMessage(
-        int? conversationId, 
+        int? conversationId,
+        string? clientConversationId,
         string? commaJoinedMembers, 
         string text, 
-        string? clientMessageId = null)
+        string? clientMessageId)
     {
-        logger.LogInformation("SendChatMessage: {ConversationId}, {CommaJoinedMembers}, {Text}, {ClientMessageId}",
-            conversationId, commaJoinedMembers, text, clientMessageId);
+        logger.LogInformation("SendMessage: {ConversationId}, {ClientConversationId}, {CommaJoinedMembers}, {Text}, {ClientMessageId}", 
+            conversationId, clientConversationId, commaJoinedMembers, text, clientMessageId);
         
-        if (conversationId == null && commaJoinedMembers == null)
+        if (conversationId == null && string.IsNullOrEmpty(commaJoinedMembers))
         {
             throw new ArgumentException("Either conversationId or commaJoinedMembers must be provided");
         }
         
         var userId = Context.User!.GetUserId();
-        var memberIds = commaJoinedMembers!.Split(",")
-            .Where(m => m != userId).ToList();
+        
         Conversation conversation;
         if (conversationId is not null)
         {
@@ -38,14 +38,14 @@ public class ChatHub(AppDbContext dbContext, ILogger<ChatHub> logger) : Hub<ICha
         }
         else
         {
+            var memberIds = commaJoinedMembers!.Split(",")
+                .Where(m => m != userId).ToList();
+            
             var members = await dbContext.Users
                 .Where(u => memberIds.Contains(u.Id))
                 .Select(u => u.Id).ToListAsync();
 
-            if (members.Count == 0)
-            {
-                throw new Exception("No members found");
-            }
+            
             
             conversation = new Conversation
             {
@@ -70,6 +70,11 @@ public class ChatHub(AppDbContext dbContext, ILogger<ChatHub> logger) : Hub<ICha
                 });
             }
             
+            if (conversation.Users.Count < 2)
+            {
+                throw new Exception("Conversation must have at least 2 members");
+            }
+            
             await dbContext.Conversations.AddAsync(conversation);
             await dbContext.SaveChangesAsync();
         }
@@ -79,7 +84,6 @@ public class ChatHub(AppDbContext dbContext, ILogger<ChatHub> logger) : Hub<ICha
             SenderId = userId,
             Conversation = conversation,
             Text = text,
-            ClientId = clientMessageId,
             CreatedAt = DateTime.UtcNow
         };
 
@@ -102,7 +106,7 @@ public class ChatHub(AppDbContext dbContext, ILogger<ChatHub> logger) : Hub<ICha
                         message.SenderId,
                         message.Text,
                         message.CreatedAt,
-                        message.ClientId
+                        clientMessageId
                     });
             }
         }

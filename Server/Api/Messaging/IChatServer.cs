@@ -4,9 +4,10 @@ public interface IChatServer
 {
     Task SendMessage(
         int? conversationId,
-        string? commaJoinedMembers,
-        string text,
-        string? clientMessageId = null);
+        string? clientConversationId,
+        string? commaJoinedMembers, 
+        string text, 
+        string? clientMessageId);
 
     Task SendTypingIndicator(int conversationId, bool isTyping);
 }
