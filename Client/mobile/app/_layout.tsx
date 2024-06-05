@@ -2,7 +2,6 @@ import { Stack, usePathname } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { View, Text } from "react-native";
 import { useAuth0, Auth0Provider } from "react-native-auth0";
-import ConnectionContext from "../hooks/ConnectionContext";
 
 import { RealmProvider } from "@realm/react";
 import { schemas } from "../schemas";
@@ -11,11 +10,6 @@ import useMessaging from "../hooks/messaging";
 const Navigator = () => {
   const { user, isLoading } = useAuth0();
   useMessaging();
-
-  const path = usePathname();
-  useEffect(() => {
-    console.log("path: ", path);
-  }, [path]);
 
   const isAuthenticated = user !== undefined && user !== null;
 
@@ -41,6 +35,9 @@ const Navigator = () => {
 };
 
 export default function RootLayout() {
+  const path = usePathname();
+  console.log("RootLayout::path: ", path);
+
   return (
     <Auth0Provider
       domain="dev-vzxphouz.us.auth0.com"
