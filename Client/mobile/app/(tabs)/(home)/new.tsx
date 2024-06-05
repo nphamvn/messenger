@@ -16,7 +16,6 @@ export default function NewScreen() {
           ></TextInput>
         </View>
       </View>
-      <Modal></Modal>
     </React.Fragment>
   );
 }
