@@ -5,11 +5,14 @@ import { Feather } from "@expo/vector-icons";
 
 export default function Layout() {
   return (
-    <Tabs>
+    <Tabs
+      screenOptions={{
+        headerShown: false,
+      }}
+    >
       <Tabs.Screen
         name="(home)"
         options={{
-          headerShown: false,
           tabBarLabel: "Conversations",
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="chatbox" size={size} color={color} />
@@ -19,7 +22,6 @@ export default function Layout() {
       <Tabs.Screen
         name="contacts"
         options={{
-          headerShown: false,
           tabBarLabel: "Contacts",
           tabBarIcon: ({ color, size }) => (
             <AntDesign name="contacts" size={size} color={color} />
@@ -29,7 +31,6 @@ export default function Layout() {
       <Tabs.Screen
         name="settings"
         options={{
-          headerShown: false,
           tabBarLabel: "Settings",
           tabBarIcon: ({ color, size }) => (
             <Feather name="settings" size={size} color={color} />
