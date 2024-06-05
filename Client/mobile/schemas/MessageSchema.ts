@@ -8,7 +8,7 @@ export class MessageSchema extends Realm.Object<MessageSchema> {
   conversation!: ConversationSchema;
   sender!: UserSchema;
   text!: string;
-  status!: "notSent" | "sent" | "delivered" | "read";
+  status!: "notSent" | "sent" | "delivered" | "read" | "failed";
   createdAt!: Date;
 
   static schema: ObjectSchema = {
@@ -16,11 +16,7 @@ export class MessageSchema extends Realm.Object<MessageSchema> {
     properties: {
       cId: { type: "objectId", default: new BSON.ObjectId() },
       sId: "int?",
-      conversation: {
-        type: "linkingObjects",
-        objectType: "Conversation",
-        property: "messages",
-      },
+      conversation: "Conversation",
       sender: "User",
       text: "string",
       status: { type: "string", default: "notSent" },
