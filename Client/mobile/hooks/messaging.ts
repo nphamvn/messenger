@@ -16,7 +16,10 @@ export default function useMessaging() {
   const notSentMessages =
     useQuery(MessageSchema).filtered("status = 'notSent'");
 
-  const handleReceiveMessage = async (conversation, message) => {
+  const handleReceiveMessage = async (
+    conversation: {},
+    message: { clientId: string }
+  ) => {
     console.log("Received message: ", conversation, message);
     const clientId = message.clientId;
     const localMessage = realm.objectForPrimaryKey(
