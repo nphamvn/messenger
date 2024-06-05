@@ -13,28 +13,23 @@ public class ChatHub(AppDbContext dbContext, ILogger<ChatHub> logger) : Hub<ICha
     private static readonly ConnectionMapping<string> Connections = new();
     
     public async Task SendMessage(
-        int? conversationId,
+        int? serverConversationId,
         string? clientConversationId,
         string? commaJoinedMembers, 
         string text, 
         string? clientMessageId)
     {
         logger.LogInformation("SendMessage: {ConversationId}, {ClientConversationId}, {CommaJoinedMembers}, {Text}, {ClientMessageId}", 
-            conversationId, clientConversationId, commaJoinedMembers, text, clientMessageId);
-        
-        if (conversationId == null && string.IsNullOrEmpty(commaJoinedMembers))
-        {
-            throw new ArgumentException("Either conversationId or commaJoinedMembers must be provided");
-        }
+            serverConversationId, clientConversationId, commaJoinedMembers, text, clientMessageId);
         
         var userId = Context.User!.GetUserId();
         
         Conversation conversation;
-        if (conversationId is not null)
+        if (serverConversationId is not null)
         {
             conversation = await dbContext.Conversations
                 .Include(c => c.Users)
-                .SingleAsync(c => c.Id == conversationId && c.Users.Any(u => u.UserId == userId));
+                .SingleAsync(c => c.Id == serverConversationId && c.Users.Any(u => u.UserId == userId));
         }
         else
         {
@@ -44,8 +39,6 @@ public class ChatHub(AppDbContext dbContext, ILogger<ChatHub> logger) : Hub<ICha
             var members = await dbContext.Users
                 .Where(u => memberIds.Contains(u.Id))
                 .Select(u => u.Id).ToListAsync();
-
-            
             
             conversation = new Conversation
             {
@@ -76,7 +69,6 @@ public class ChatHub(AppDbContext dbContext, ILogger<ChatHub> logger) : Hub<ICha
             }
             
             await dbContext.Conversations.AddAsync(conversation);
-            await dbContext.SaveChangesAsync();
         }
         
         var message = new Message

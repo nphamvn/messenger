@@ -3,7 +3,7 @@
 public interface IChatServer
 {
     Task SendMessage(
-        int? conversationId,
+        int? serverConversationId,
         string? clientConversationId,
         string? commaJoinedMembers, 
         string text, 
