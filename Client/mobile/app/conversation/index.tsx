@@ -15,26 +15,30 @@ import {
   Keyboard,
 } from "react-native";
 import { useAuth0 } from "react-native-auth0";
-import { useRealm } from "@realm/react";
-import { MessageSchema as MessageSchema } from "../../schemas/MessageSchema";
+import { useQuery, useRealm } from "@realm/react";
+import { Message as Message } from "../../schemas/Message";
 import { BSON } from "realm";
-import { ConversationSchema } from "../../schemas/ConversationSchema";
-import { UserSchema } from "../../schemas/UserSchema";
+import { Conversation } from "../../schemas/Conversation";
+import { User } from "../../schemas/User";
+import useMessaging from "../../hooks/messaging";
 
 export default function ChatScreen() {
-  const { user } = useAuth0();
+  //const { user } = useAuth0();
+  const { currentUser } = useMessaging();
   const realm = useRealm();
   const { cIdParam, uId } = useLocalSearchParams<{
     cIdParam?: string;
     uId?: string;
   }>();
 
-  const [conv, setConv] = useState<ConversationSchema>();
+  const [conv, setConv] = useState<Conversation>();
+
+  const messages = useQuery(Message).filtered("conversation = $0", conv);
 
   useEffect(() => {
     if (cIdParam) {
       const localConv = realm.objectForPrimaryKey(
-        ConversationSchema,
+        Conversation,
         new BSON.ObjectId(cIdParam)
       );
       if (localConv) {
@@ -42,12 +46,13 @@ export default function ChatScreen() {
         return;
       }
     } else {
-      const localO2OConv = realm
-        .objects(ConversationSchema)
-        .filtered(`users[0].id = ${uId}`)[0];
-      if (localO2OConv) {
-        setConv(localO2OConv);
-        return;
+      const member = realm.objectForPrimaryKey(User, uId!);
+      if (member) {
+        const conv = member
+          .linkingObjects(Conversation, "users")
+          .filtered("users.@count == 2")[0];
+        console.log("conv", conv);
+        setConv(conv);
       }
     }
   }, [cIdParam, uId]);
@@ -61,33 +66,29 @@ export default function ChatScreen() {
       if (!uId) {
         throw new Error("uId is required to create a new conversation.");
       }
-      const user = realm.objectForPrimaryKey(UserSchema, uId);
-      if (!user) {
+      const member = realm.objectForPrimaryKey(User, uId);
+      if (!member) {
         throw new Error("User not found.");
       }
       const newConv = realm.write(() => {
-        return realm.create(ConversationSchema, {
+        return realm.create(Conversation, {
           cId: new BSON.ObjectId(),
-          users: [user],
+          users: [currentUser!, member],
         });
       });
 
-      const newMsg = realm.write(() => {
-        return realm.create(MessageSchema, {
+      realm.write(() => {
+        return realm.create(Message, {
           cId: new BSON.ObjectId(),
-          conversation: conv,
+          conversation: newConv,
           text: text,
           status: "notSent",
           createdAt: new Date(),
         });
       });
-
-      newConv.messages.push(newMsg);
-
-      setConv(newConv);
     } else {
       const newMsg = realm.write(() => {
-        return realm.create(MessageSchema, {
+        return realm.create(Message, {
           cId: new BSON.ObjectId(),
           conversation: conv,
           text: text,
@@ -95,8 +96,6 @@ export default function ChatScreen() {
           createdAt: new Date(),
         });
       });
-
-      conv.messages.push(newMsg);
     }
 
     realm.commitTransaction();
@@ -114,9 +113,9 @@ export default function ChatScreen() {
       <SafeAreaView style={{ flex: 1 }}>
         <View style={{ flex: 1, padding: 20, backgroundColor: "#fff" }}>
           <FlatList
-            data={conv?.messages}
+            data={messages}
             renderItem={({ item }) =>
-              item.sender.id === user?.sub ? (
+              item.sender === currentUser ? (
                 <View style={[styles.messageWrapper, styles.sentWrapper]}>
                   <View style={[styles.messageBubble, styles.sent]}>
                     <Text style={styles.messageText}>{item.text}</Text>

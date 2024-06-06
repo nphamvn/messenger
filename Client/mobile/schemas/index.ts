@@ -1,5 +1,5 @@
-import { ConversationSchema } from "./ConversationSchema";
-import { MessageSchema } from "./MessageSchema";
-import { UserSchema } from "./UserSchema";
+import { Conversation } from "./Conversation";
+import { Message } from "./Message";
+import { User } from "./User";
 
-export const schemas = [UserSchema, ConversationSchema, MessageSchema];
+export const schemas = [User, Conversation, Message];

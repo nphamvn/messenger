@@ -1,20 +1,22 @@
 import { useQuery, useRealm } from "@realm/react";
 import { useEffect, useState } from "react";
 import { useAuth0 } from "react-native-auth0";
-import { MessageSchema } from "../schemas/MessageSchema";
+import { Message } from "../schemas/Message";
 import * as signalR from "@microsoft/signalr";
 import { appConfig } from "../constants/appConfig";
 import { BSON } from "realm";
+import { User } from "../schemas/User";
 
 export default function useMessaging() {
   const { user, getCredentials } = useAuth0();
+
   const isAuthenticated = user !== undefined && user !== null;
   const realm = useRealm();
 
   const [connection, setConnection] = useState<signalR.HubConnection>();
+  const [currentUser, setCurrentUser] = useState<User>();
 
-  const notSentMessages =
-    useQuery(MessageSchema).filtered("status = 'notSent'");
+  const notSentMessages = useQuery(Message).filtered("status = 'notSent'");
 
   const handleReceiveMessage = async (
     conversation: {},
@@ -23,7 +25,7 @@ export default function useMessaging() {
     console.log("Received message: ", conversation, message);
     const clientId = message.clientId;
     const localMessage = realm.objectForPrimaryKey(
-      MessageSchema,
+      Message,
       new BSON.ObjectId(clientId)
     );
     if (localMessage) {
@@ -58,6 +60,18 @@ export default function useMessaging() {
         connection.on("ReceiveMessage", handleReceiveMessage);
         setConnection(connection);
       })();
+
+      let localUser = realm.objectForPrimaryKey(User, user?.sub!);
+      if (!localUser) {
+        realm.write(() => {
+          localUser = realm.create(User, {
+            id: user?.sub!,
+            fullName: user?.name!,
+            picture: user?.picture!,
+          });
+        });
+      }
+      setCurrentUser(localUser!);
     }
   }, [isAuthenticated]);
 
@@ -69,7 +83,7 @@ export default function useMessaging() {
       console.log("Connection not ready or no messages to send");
       return;
     }
-    notSentMessages.forEach((msg: MessageSchema) => {
+    notSentMessages.forEach((msg: Message) => {
       console.log("Sending message: ", msg.cId);
       connection
         ?.invoke(
@@ -89,5 +103,5 @@ export default function useMessaging() {
     });
   }, [connection, notSentMessages]);
 
-  return { connection };
+  return { currentUser, connection };
 }

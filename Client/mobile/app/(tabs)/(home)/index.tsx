@@ -10,9 +10,8 @@ import {
 } from "react-native";
 import { Link, Stack, router, usePathname } from "expo-router";
 import { useAuth0 } from "react-native-auth0";
-import { Conversation } from "../../../models/Conversation";
 import { appConfig } from "../../../constants/appConfig";
-import { ConversationSchema } from "../../../schemas/ConversationSchema";
+import { Conversation } from "../../../schemas/Conversation";
 import { useQuery } from "@realm/react";
 import React from "react";
 
@@ -20,7 +19,7 @@ export default function ConversationsScreen() {
   const path = usePathname();
   const { getCredentials } = useAuth0();
   const [, setConversations] = useState<Conversation[]>([]);
-  const localConversations = useQuery(ConversationSchema);
+  const localConversations = useQuery(Conversation);
 
   const [refreshing, setRefreshing] = useState(false);
 
