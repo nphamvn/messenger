@@ -97,7 +97,7 @@ export default function ConversationsScreen() {
                     source={{ uri: item.users[0]?.picture }}
                     style={{ height: 40, width: 40, borderRadius: 20 }}
                   />
-                  <View style={{ marginLeft: 4 }}>
+                  {/* <View style={{ marginLeft: 4 }}>
                     <Text>{item.users[0]?.fullName}</Text>
                     <Text style={{ marginTop: 2 }}>
                       {item.messages[item.messages.length - 1]?.text}
@@ -107,7 +107,7 @@ export default function ConversationsScreen() {
                     {new Date(
                       item.messages[item.messages.length - 1]?.createdAt
                     ).toLocaleDateString()}
-                  </Text>
+                  </Text> */}
                 </View>
               </Pressable>
             )}

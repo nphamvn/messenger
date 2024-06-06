@@ -14,7 +14,6 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
 } from "react-native";
-import { useAuth0 } from "react-native-auth0";
 import { useQuery, useRealm } from "@realm/react";
 import { Message as Message } from "../../schemas/Message";
 import { BSON } from "realm";
@@ -23,15 +22,14 @@ import { User } from "../../schemas/User";
 import useMessaging from "../../hooks/messaging";
 
 export default function ChatScreen() {
-  //const { user } = useAuth0();
-  const { currentUser } = useMessaging();
+  const { user, getO2OConversation } = useMessaging();
   const realm = useRealm();
   const { cIdParam, uId } = useLocalSearchParams<{
     cIdParam?: string;
     uId?: string;
   }>();
 
-  const [conv, setConv] = useState<Conversation>();
+  const [conv, setConv] = useState<Conversation | null>(null);
 
   const messages = useQuery(Message).filtered("conversation = $0", conv);
 
@@ -46,14 +44,10 @@ export default function ChatScreen() {
         return;
       }
     } else {
-      const member = realm.objectForPrimaryKey(User, uId!);
-      if (member) {
-        const conv = member
-          .linkingObjects(Conversation, "users")
-          .filtered("users.@count == 2")[0];
-        console.log("conv", conv);
+      (async () => {
+        const conv = await getO2OConversation(uId!);
         setConv(conv);
-      }
+      })();
     }
   }, [cIdParam, uId]);
 
@@ -73,7 +67,7 @@ export default function ChatScreen() {
       const newConv = realm.write(() => {
         return realm.create(Conversation, {
           cId: new BSON.ObjectId(),
-          users: [currentUser!, member],
+          users: [user!, member],
         });
       });
 
@@ -115,7 +109,7 @@ export default function ChatScreen() {
           <FlatList
             data={messages}
             renderItem={({ item }) =>
-              item.sender === currentUser ? (
+              item.sender === user ? (
                 <View style={[styles.messageWrapper, styles.sentWrapper]}>
                   <View style={[styles.messageBubble, styles.sent]}>
                     <Text style={styles.messageText}>{item.text}</Text>
