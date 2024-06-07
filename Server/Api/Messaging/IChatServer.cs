@@ -10,4 +10,6 @@ public interface IChatServer
         string? clientMessageId);
 
     Task SendTypingIndicator(int conversationId, bool isTyping);
+    
+    Task SendMessageAction(int messageId, string action);
 }

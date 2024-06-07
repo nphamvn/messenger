@@ -23,5 +23,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         
         modelBuilder.Entity<ConversationUser>()
             .HasKey(cu => new { cu.UserId, cu.ConversationId });
+        
+        modelBuilder.Entity<MessageAction>()
+            .HasKey(x => new { x.UserId, x.MessageId, x.Action });
     }
 }
