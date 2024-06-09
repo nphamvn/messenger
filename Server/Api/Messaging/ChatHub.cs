@@ -17,7 +17,8 @@ public class ChatHub(AppDbContext dbContext, ILogger<ChatHub> logger) : Hub<ICha
         string? clientConversationId,
         string? commaJoinedMembers, 
         string text, 
-        string? clientMessageId)
+        string? clientMessageId,
+        string ackId)
     {
         logger.LogInformation("SendMessage: {ConversationId}, {ClientConversationId}, {CommaJoinedMembers}, {Text}, {ClientMessageId}", 
             serverConversationId, clientConversationId, commaJoinedMembers, text, clientMessageId);
@@ -102,6 +103,8 @@ public class ChatHub(AppDbContext dbContext, ILogger<ChatHub> logger) : Hub<ICha
                     });
             }
         }
+
+        await Clients.Caller.ReceiveAckMessage(ackId, null);
     }
 
     public async Task SendTypingIndicator(int conversationId, bool isTyping)

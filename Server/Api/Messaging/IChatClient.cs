@@ -2,6 +2,7 @@
 
 public interface IChatClient
 {
+    Task ReceiveAckMessage(string ackId, string? error);
     Task ReceiveMessage(object conversation, object message);
     
     Task ReceiveTypingIndicator(int conversationId, string userId, bool isTyping);
