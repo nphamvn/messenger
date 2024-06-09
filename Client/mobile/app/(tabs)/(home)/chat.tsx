@@ -17,11 +17,11 @@ import {
   Modal,
 } from "react-native";
 import { Message } from "@schemas/index";
-import useMessaging from "@hooks/messaging";
+import useAppDelegate from "@hooks/messaging";
 import useConversation from "@hooks/conversation";
 
 export default function ChatScreen() {
-  const { user } = useMessaging();
+  const { user } = useAppDelegate();
   const { cId, uId } = useLocalSearchParams<{
     cId?: string;
     uId?: string;

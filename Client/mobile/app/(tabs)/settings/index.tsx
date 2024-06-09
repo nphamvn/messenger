@@ -6,12 +6,12 @@ import {
   View,
   Image,
 } from "react-native";
-import useMessaging from "@hooks/messaging";
+import useAppDelegate from "@hooks/messaging";
 import { useAuth0 } from "react-native-auth0";
 
 export default function SettingsScreen() {
   const { clearSession } = useAuth0();
-  const { user } = useMessaging();
+  const { user } = useAppDelegate();
 
   const onPressLogout = async () => {
     Alert.alert("Logout confirm", "Are you sure you want to logout?", [

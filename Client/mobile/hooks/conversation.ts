@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useAuth0 } from "react-native-auth0";
 import { BSON, UpdateMode } from "realm";
 import { User, Conversation, Message } from "schemas";
-import useMessaging from "./messaging";
+import useAppDelegate from "./messaging";
 import { MessageAction } from "@schemas/MessageAction";
 
 export default function useConversation(
@@ -15,7 +15,7 @@ export default function useConversation(
     throw new Error("Must provide either conversationId or userId");
   }
 
-  const { user } = useMessaging();
+  const { user } = useAppDelegate();
   const { getCredentials } = useAuth0();
   const realm = useRealm();
 

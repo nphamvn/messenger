@@ -4,7 +4,7 @@ import { Auth0Provider } from "react-native-auth0";
 
 import { RealmProvider } from "@realm/react";
 import { schemas } from "../schemas";
-import { MessagingProvider } from "../hooks/messaging";
+import { AppDelegateProvider } from "../hooks/messaging";
 
 export default function Root() {
   const path = usePathname();
@@ -15,7 +15,7 @@ export default function Root() {
       clientId="9UL0KQ340BiIAL8ZtI5VMhVQn0eQqMOS"
     >
       <RealmProvider deleteRealmIfMigrationNeeded={true} schema={schemas}>
-        <MessagingProvider>
+        <AppDelegateProvider>
           <Stack>
             <Stack.Screen
               name="(tabs)"
@@ -23,7 +23,7 @@ export default function Root() {
             ></Stack.Screen>
             <Stack.Screen name="login" />
           </Stack>
-        </MessagingProvider>
+        </AppDelegateProvider>
       </RealmProvider>
     </Auth0Provider>
   );

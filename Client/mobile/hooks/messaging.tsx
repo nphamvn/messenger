@@ -6,33 +6,19 @@ import {
   useRef,
   useState,
 } from "react";
-import { User } from "../schemas/User";
+import {
+  User,
+  Conversation,
+  Message,
+  MessageAction,
+  AckMessage,
+} from "@schemas/index";
 import { useAuth0 } from "react-native-auth0";
 import { useQuery, useRealm } from "@realm/react";
 import * as signalR from "@microsoft/signalr";
 import { appConfig } from "../constants/appConfig";
-import { Message } from "../schemas/Message";
 import { BSON, UpdateMode } from "realm";
 import { useRouter, useSegments } from "expo-router";
-import { Conversation } from "../schemas/Conversation";
-import { MessageAction } from "@schemas/MessageAction";
-import { AckMessage } from "@schemas/AckMessage";
-
-interface MessagingContextType {
-  connection: signalR.HubConnection | undefined;
-  user: User | undefined;
-}
-export const MessagingContext = createContext<MessagingContextType | undefined>(
-  undefined
-);
-
-export default function useMessaging(): MessagingContextType {
-  const context = useContext(MessagingContext);
-  if (!context) {
-    throw new Error("useMessaging must be used within a MessagingProvider");
-  }
-  return context;
-}
 
 function useSyncMessages(user: User | undefined) {
   const { getCredentials } = useAuth0();
@@ -140,10 +126,28 @@ function useDataCleaner() {
   }, [user, isLoading]);
 }
 
-function useMessageActionQueue(connection: signalR.HubConnection | undefined) {
+function useMessage(connection: signalR.HubConnection | undefined) {
   const createdMessageActions =
     useQuery(MessageAction).filtered("status = 'created'");
   const realm = useRealm();
+
+  const handleReceiveMessage = async (
+    conversation: {},
+    message: { clientMessageId: string }
+  ) => {
+    console.log("Received message: ", conversation, message);
+    const clientId = message.clientMessageId;
+    console.log("clientId: ", clientId);
+    const msg = realm.objectForPrimaryKey(Message, new BSON.ObjectId(clientId));
+    if (msg) {
+      console.log("Message found: ", msg, ". Updating status to sent.");
+      realm.write(() => {
+        msg.status = "sent";
+      });
+    } else {
+      console.log("Message not found: ", clientId);
+    }
+  };
 
   const handleReceiveAckMessage = (ackiId: string, error?: string) => {
     console.log("Received ack: ", ackiId, error);
@@ -180,13 +184,16 @@ function useMessageActionQueue(connection: signalR.HubConnection | undefined) {
       window.clearInterval(intervalRef.current);
     };
   }, []);
+
   useEffect(() => {
-    console.log("Setting up message action queue");
+    connection?.on("ReceiveMessage", handleReceiveMessage);
     connection?.on("ReceiveAckMessage", handleReceiveAckMessage);
     return () => {
+      connection?.off("ReceiveMessage", handleReceiveMessage);
       connection?.off("ReceiveAckMessage", handleReceiveAckMessage);
     };
   }, [connection]);
+
   useEffect(() => {
     if (connection?.state !== signalR.HubConnectionState.Connected) {
       console.log("Connection not ready");
@@ -226,96 +233,107 @@ function useMessageActionQueue(connection: signalR.HubConnection | undefined) {
   }, [createdMessageActions, connection]);
 }
 
-export const MessagingProvider = ({ children }: { children: ReactNode }) => {
-  const { user: authUser, getCredentials } = useAuth0();
+function useUser() {
+  const { user: authUser } = useAuth0();
   const realm = useRealm();
-
-  const [connection, setConnection] = useState<signalR.HubConnection>();
   const [user, setUser] = useState<User>();
 
-  useRouteGuard();
-  useDataCleaner();
-  useSyncMessages(user);
-  useMessageActionQueue(connection);
-
-  const handleReceiveMessage = async (
-    conversation: {},
-    message: { clientMessageId: string }
-  ) => {
-    console.log("Received message: ", conversation, message);
-    const clientId = message.clientMessageId;
-    console.log("clientId: ", clientId);
-    const msg = realm.objectForPrimaryKey(Message, new BSON.ObjectId(clientId));
-    if (msg) {
-      console.log("Message found: ", msg, ". Updating status to sent.");
-      realm.write(() => {
-        msg.status = "sent";
-      });
+  useEffect(() => {
+    if (authUser) {
+      let user = realm.objectForPrimaryKey(User, authUser?.sub!);
+      if (!user) {
+        console.log("Creating user");
+        realm.write(() => {
+          user = realm.create(User, {
+            id: authUser?.sub!,
+            fullName: authUser?.name!,
+            picture: authUser?.picture!,
+          });
+        });
+      }
+      setUser(user!);
     } else {
-      console.log("Message not found: ", clientId);
+      setUser(undefined);
     }
+  }, [authUser]);
+
+  return user;
+}
+
+function useConnector() {
+  const { user, getCredentials } = useAuth0();
+  const [connection, setConnection] = useState<signalR.HubConnection>();
+
+  const connect = async () => {
+    const { accessToken } = (await getCredentials())!;
+    const connection = new signalR.HubConnectionBuilder()
+      .withUrl(`${appConfig.API_URL}/chat`, {
+        accessTokenFactory: () => accessToken,
+        skipNegotiation: true,
+        transport: signalR.HttpTransportType.WebSockets,
+      })
+      .withAutomaticReconnect()
+      .build();
+
+    connection
+      .start()
+      .then(() => {
+        console.log("Connection started");
+      })
+      .catch((error) => {
+        console.error("Error starting connection: ", error);
+      });
+
+    connection.onclose((error) => {
+      console.error("Connection closed: ", error);
+    });
+
+    setConnection(connection);
   };
 
   useEffect(() => {
-    if (!authUser) {
-      return;
+    if (user) {
+      connect();
     }
-  }, [authUser]);
 
-  useEffect(() => {
-    if (!authUser) {
-      console.log("No auth user");
-      return;
-    }
-    let user = realm.objectForPrimaryKey(User, authUser?.sub!);
-    console.log("Local user: ", user);
-    if (!user) {
-      console.log("Creating user");
-      realm.write(() => {
-        user = realm.create(User, {
-          id: authUser?.sub!,
-          fullName: authUser?.name!,
-          picture: authUser?.picture!,
-        });
-      });
-    }
-    setUser(user!);
-
-    (async () => {
-      const { accessToken } = (await getCredentials())!;
-      const connection = new signalR.HubConnectionBuilder()
-        .withUrl(`${appConfig.API_URL}/chat`, {
-          accessTokenFactory: () => accessToken,
-          skipNegotiation: true,
-          transport: signalR.HttpTransportType.WebSockets,
-        })
-        .withAutomaticReconnect()
-        .build();
-
-      connection
-        .start()
-        .then(() => {
-          console.log("Connection started");
-        })
-        .catch((error) => {
-          console.error("Error starting connection: ", error);
-        });
-
-      connection.onclose((error) => {
-        console.error("Connection closed: ", error);
-      });
-
-      connection.on("ReceiveMessage", handleReceiveMessage);
-      setConnection(connection);
-    })();
     return () => {
       connection?.stop();
     };
-  }, [authUser]);
+  }, [user]);
+
+  return connection;
+}
+
+interface AppDelegateContextType {
+  connection: signalR.HubConnection | undefined;
+  user: User | undefined;
+}
+
+export const AppDelegateContext = createContext<
+  AppDelegateContextType | undefined
+>(undefined);
+
+export default function useAppDelegate(): AppDelegateContextType {
+  const context = useContext(AppDelegateContext);
+  if (!context) {
+    throw new Error("useAppDelegate must be used within a AppDelegateProvider");
+  }
+  return context;
+}
+
+export const AppDelegateProvider = ({ children }: { children: ReactNode }) => {
+  useRouteGuard();
+  useDataCleaner();
+
+  const user = useUser();
+  const connection = useConnector();
+
+  useSyncMessages(user);
+  useMessage(connection);
 
   return (
-    <MessagingContext.Provider value={{ user, connection }}>
+    <AppDelegateContext.Provider value={{ user, connection }}>
       {children}
-    </MessagingContext.Provider>
+    </AppDelegateContext.Provider>
   );
 };
