@@ -7,7 +7,8 @@ public interface IChatServer
         string? clientConversationId,
         string? commaJoinedMembers, 
         string text, 
-        string? clientMessageId);
+        string? clientMessageId,
+        string ackId);
 
     Task SendTypingIndicator(int conversationId, bool isTyping);
     
