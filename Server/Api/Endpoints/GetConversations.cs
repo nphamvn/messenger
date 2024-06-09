@@ -39,7 +39,7 @@ public static class GetConversations
                             }
                             : null,
                         c.CreatedAt,
-                        Members = c.Users.Where(u => u.UserId != userId).Select(u => new
+                        Members = c.Users.Select(u => new
                         {
                             Id = u.UserId,
                             u.User.FullName,
