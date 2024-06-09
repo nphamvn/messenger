@@ -10,6 +10,12 @@ export default function Layout() {
         }}
       />
       <Stack.Screen
+        name="chat"
+        options={{
+          title: "Chat",
+        }}
+      />
+      <Stack.Screen
         name="new"
         options={{
           title: "New Conversation",

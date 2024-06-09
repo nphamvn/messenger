@@ -6,10 +6,13 @@ import {
   View,
   Image,
 } from "react-native";
+import useMessaging from "@hooks/messaging";
 import { useAuth0 } from "react-native-auth0";
 
 export default function SettingsScreen() {
-  const { clearSession, user } = useAuth0();
+  const { clearSession } = useAuth0();
+  const { user } = useMessaging();
+
   const onPressLogout = async () => {
     Alert.alert("Logout confirm", "Are you sure you want to logout?", [
       {
@@ -33,9 +36,9 @@ export default function SettingsScreen() {
           />
           <View>
             <Text style={{ fontWeight: "bold", fontSize: 16 }}>
-              {user?.name}
+              {user?.fullName}
             </Text>
-            <Text>{user?.sub}</Text>
+            <Text>{user?.id}</Text>
           </View>
         </View>
         <Pressable

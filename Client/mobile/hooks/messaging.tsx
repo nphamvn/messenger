@@ -1,9 +1,9 @@
 import {
-  FC,
   ReactNode,
   createContext,
   useContext,
   useEffect,
+  useRef,
   useState,
 } from "react";
 import { User } from "../schemas/User";
@@ -12,15 +12,15 @@ import { useQuery, useRealm } from "@realm/react";
 import * as signalR from "@microsoft/signalr";
 import { appConfig } from "../constants/appConfig";
 import { Message } from "../schemas/Message";
-import { BSON } from "realm";
-import { useRouter } from "expo-router";
+import { BSON, UpdateMode } from "realm";
+import { useRouter, useSegments } from "expo-router";
 import { Conversation } from "../schemas/Conversation";
+import { MessageAction } from "@schemas/MessageAction";
+import { AckMessage } from "@schemas/AckMessage";
 
 interface MessagingContextType {
   connection: signalR.HubConnection | undefined;
   user: User | undefined;
-  //getUser: (id: string) => Promise<User>;
-  getO2OConversation: (userId: string) => Promise<Conversation | null>;
 }
 export const MessagingContext = createContext<MessagingContextType | undefined>(
   undefined
@@ -34,49 +34,252 @@ export default function useMessaging(): MessagingContextType {
   return context;
 }
 
+function useSyncMessages(user: User | undefined) {
+  const { getCredentials } = useAuth0();
+  const realm = useRealm();
+  const sync = async () => {
+    if (!user) {
+      throw new Error("User not found");
+    }
+    console.log("Syncing messages");
+
+    const accessToken = (await getCredentials())?.accessToken;
+    //GetConversations
+    fetch(`${appConfig.API_URL}/conversations`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    })
+      .then((res) => res.json())
+      .then(
+        (
+          data: [
+            {
+              createdAt: string;
+              id: number;
+              members: [{ id: string; fullName: string; picture: string }];
+            }
+          ]
+        ) => {
+          realm.write(() => {
+            console.log("Deleting all conversations");
+            realm.delete(realm.objects(Conversation));
+
+            data.forEach((conversation) => {
+              realm.delete(
+                realm.objects(Conversation).filtered(`sId = ${conversation.id}`)
+              );
+              console.log("conversation", conversation);
+              const inConversation = conversation.members.some(
+                (m) => m.id === user.id
+              );
+              if (!inConversation) {
+                console.log("User not in conversation");
+                return;
+              }
+              const otherUsers = conversation.members
+                .filter((m) => m.id !== user.id)
+                .map(
+                  (m) =>
+                    realm.objectForPrimaryKey(User, m.id) ||
+                    realm.create(User, {
+                      id: m.id,
+                      fullName: m.fullName,
+                      picture: m.picture,
+                    })
+                );
+              console.log("otherUsers", otherUsers);
+              if (otherUsers.length === 0) {
+                console.log("No other users in conversation");
+                return;
+              }
+              realm.create(Conversation, {
+                cId: new BSON.ObjectId(),
+                sId: conversation.id,
+                users: [user, ...otherUsers],
+              });
+            });
+          });
+        }
+      );
+  };
+  useEffect(() => {
+    if (!user) {
+      return;
+    }
+    sync();
+  }, [user]);
+}
+
+function useRouteGuard() {
+  const { user } = useAuth0();
+  const segments = useSegments();
+  const router = useRouter();
+  useEffect(() => {
+    const isInProtectedGroup = segments[0] === "(tabs)";
+    if (!user && isInProtectedGroup) {
+      router.replace("/login");
+    } else if (user && !isInProtectedGroup) {
+      router.replace("/");
+    }
+  }, [user, segments]);
+}
+
+function useDataCleaner() {
+  const { user, isLoading } = useAuth0();
+  const realm = useRealm();
+
+  useEffect(() => {
+    if (!user && !isLoading) {
+      console.log("Deleting all data");
+      realm.write(() => {
+        realm.deleteAll();
+      });
+    }
+  }, [user, isLoading]);
+}
+
+function useMessageActionQueue(connection: signalR.HubConnection | undefined) {
+  const createdMessageActions =
+    useQuery(MessageAction).filtered("status = 'created'");
+  const realm = useRealm();
+
+  const handleReceiveAckMessage = (ackiId: string, error?: string) => {
+    console.log("Received ack: ", ackiId, error);
+    realm.write(() => {
+      realm.create(
+        AckMessage,
+        { _id: new BSON.ObjectId(ackiId), error },
+        UpdateMode.Modified
+      );
+    });
+  };
+  const intervalRef = useRef<number>();
+  useEffect(() => {
+    intervalRef.current = window.setInterval(() => {
+      const inProgressMessageActions = realm
+        .objects(MessageAction)
+        .filtered("status = 'inProgress'");
+
+      inProgressMessageActions.forEach((action: MessageAction) => {
+        const ackMessage = realm.objectForPrimaryKey(AckMessage, action._id);
+        if (ackMessage) {
+          if (!ackMessage.error) {
+            console.log("done. delete action and ackMessage");
+            realm.write(() => {
+              realm.delete(action);
+              realm.delete(ackMessage);
+            });
+          }
+        }
+      });
+    }, 1000);
+    return () => {
+      console.log("Clearing interval");
+      window.clearInterval(intervalRef.current);
+    };
+  }, []);
+  useEffect(() => {
+    console.log("Setting up message action queue");
+    connection?.on("ReceiveAckMessage", handleReceiveAckMessage);
+    return () => {
+      connection?.off("ReceiveAckMessage", handleReceiveAckMessage);
+    };
+  }, [connection]);
+  useEffect(() => {
+    if (connection?.state !== signalR.HubConnectionState.Connected) {
+      console.log("Connection not ready");
+      return;
+    }
+    if (createdMessageActions.length === 0) {
+      console.log("No messages to send");
+      return;
+    }
+
+    createdMessageActions.forEach((action: MessageAction) => {
+      console.log("Processing action: ", action);
+      if (action.action === "send") {
+        const msg = action.message;
+        connection
+          ?.invoke(
+            "SendMessage",
+            msg.conversation.sId,
+            msg.cId.toString(),
+            msg.conversation.users.map((u) => u.id).join(","),
+            msg.text,
+            msg.cId.toString(),
+            action._id.toString()
+          )
+          .then(() => {
+            console.log("...sent");
+            realm.write(() => {
+              action.status = "inProgress";
+            });
+          })
+          .catch((error) => {
+            console.error("Error sending message: ", error);
+          })
+          .finally(() => {});
+      }
+    });
+  }, [createdMessageActions, connection]);
+}
+
 export const MessagingProvider = ({ children }: { children: ReactNode }) => {
   const { user: authUser, getCredentials } = useAuth0();
   const realm = useRealm();
-  const notSentMessages = useQuery(Message).filtered("status = 'notSent'");
-  const router = useRouter();
+
   const [connection, setConnection] = useState<signalR.HubConnection>();
   const [user, setUser] = useState<User>();
 
+  useRouteGuard();
+  useDataCleaner();
+  useSyncMessages(user);
+  useMessageActionQueue(connection);
+
   const handleReceiveMessage = async (
     conversation: {},
-    message: { clientId: string }
+    message: { clientMessageId: string }
   ) => {
     console.log("Received message: ", conversation, message);
-    const clientId = message.clientId;
-    const localMessage = realm.objectForPrimaryKey(
-      Message,
-      new BSON.ObjectId(clientId)
-    );
-    if (localMessage) {
+    const clientId = message.clientMessageId;
+    console.log("clientId: ", clientId);
+    const msg = realm.objectForPrimaryKey(Message, new BSON.ObjectId(clientId));
+    if (msg) {
+      console.log("Message found: ", msg, ". Updating status to sent.");
       realm.write(() => {
-        localMessage.status = "sent";
+        msg.status = "sent";
       });
+    } else {
+      console.log("Message not found: ", clientId);
     }
   };
 
   useEffect(() => {
-    console.log("useMessaging hook");
+    if (!authUser) {
+      return;
+    }
+  }, [authUser]);
+
+  useEffect(() => {
     if (!authUser) {
       console.log("No auth user");
       return;
     }
-    let localUser = realm.objectForPrimaryKey(User, authUser?.sub!);
-    console.log("Local user: ", localUser);
-    if (!localUser) {
+    let user = realm.objectForPrimaryKey(User, authUser?.sub!);
+    console.log("Local user: ", user);
+    if (!user) {
+      console.log("Creating user");
       realm.write(() => {
-        localUser = realm.create(User, {
+        user = realm.create(User, {
           id: authUser?.sub!,
           fullName: authUser?.name!,
-          picture: user?.picture!,
+          picture: authUser?.picture!,
         });
       });
     }
-    setUser(localUser!);
+    setUser(user!);
 
     (async () => {
       const { accessToken } = (await getCredentials())!;
@@ -105,92 +308,13 @@ export const MessagingProvider = ({ children }: { children: ReactNode }) => {
       connection.on("ReceiveMessage", handleReceiveMessage);
       setConnection(connection);
     })();
-
-    router.replace("/");
-
     return () => {
       connection?.stop();
     };
   }, [authUser]);
 
-  useEffect(() => {
-    if (connection?.state !== signalR.HubConnectionState.Connected) {
-      console.log("Connection not ready");
-      return;
-    }
-    if (notSentMessages.length === 0) {
-      console.log("No messages to send");
-      return;
-    }
-    notSentMessages.forEach((msg: Message) => {
-      console.log("Sending message: ", msg.cId);
-      connection
-        ?.invoke(
-          "SendMessage",
-          msg.conversation.sId,
-          msg.conversation.users.map((u) => u.id).join(","),
-          msg.text,
-          msg.cId.toString()
-        )
-        .then(() => {
-          console.log("...sent");
-        })
-        .catch((error) => {
-          console.error("Error sending message: ", error);
-        })
-        .finally(() => {});
-    });
-  }, [connection, notSentMessages]);
-
-  const getO2OConversation = async (userId: string) => {
-    console.log("getO2OConversation", userId);
-    let member = realm.objectForPrimaryKey(User, userId);
-    console.log("member", member);
-    if (!member) {
-      console.log("Creating user");
-      member = realm.write(() => {
-        return realm.create(User, {
-          id: userId,
-          fullName: "todo: ",
-          picture: "https://picsum.photos/200",
-        });
-      });
-    }
-    const conv = member
-      .linkingObjects(Conversation, "users")
-      .filtered("users.@count == 2")[0];
-    console.log("conv", conv);
-    if (conv) {
-      console.log("Returning existing conversation");
-      return conv;
-    } else {
-      console.log("Creating new conversation");
-      const accessToken = (await getCredentials())?.accessToken;
-      const response = await fetch(
-        `${appConfig.API_URL}/conversations/o2o/${userId}`,
-        {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-        }
-      );
-      if (response.ok) {
-        const { id } = await response.json();
-        return realm.write(() => {
-          return realm.create(Conversation, {
-            cId: new BSON.ObjectId(),
-            sId: id,
-            users: [user!, member],
-          });
-        });
-      }
-      return null;
-    }
-  };
-
   return (
-    <MessagingContext.Provider value={{ user, connection, getO2OConversation }}>
+    <MessagingContext.Provider value={{ user, connection }}>
       {children}
     </MessagingContext.Provider>
   );

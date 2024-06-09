@@ -1,25 +1,25 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import {
   View,
   Text,
   FlatList,
   Image,
-  Pressable,
   SafeAreaView,
   RefreshControl,
+  TouchableOpacity,
 } from "react-native";
-import { Link, Stack, router, usePathname } from "expo-router";
+import { Link, Stack, router } from "expo-router";
 import { useAuth0 } from "react-native-auth0";
 import { appConfig } from "../../../constants/appConfig";
 import { Conversation } from "../../../schemas/Conversation";
 import { useQuery } from "@realm/react";
 import React from "react";
+import useMessaging from "../../../hooks/messaging";
 
 export default function ConversationsScreen() {
-  const path = usePathname();
+  const { user } = useMessaging();
   const { getCredentials } = useAuth0();
-  const [, setConversations] = useState<Conversation[]>([]);
-  const localConversations = useQuery(Conversation);
+  const convesations = useQuery(Conversation);
 
   const [refreshing, setRefreshing] = useState(false);
 
@@ -39,16 +39,9 @@ export default function ConversationsScreen() {
       },
     });
     const data = await response.json();
-    setConversations(data);
+    console.log("data: ", data);
   };
 
-  useEffect(() => {
-    (async () => {
-      await fetchConversations();
-    })();
-  }, []);
-
-  console.log("path: ", path);
   return (
     <React.Fragment>
       <Stack.Screen
@@ -71,46 +64,49 @@ export default function ConversationsScreen() {
             refreshControl={
               <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
             }
-            data={localConversations}
-            renderItem={({ item }) => (
-              <Pressable
-                onPress={() =>
-                  router.push({
-                    pathname: "/conversation",
-                    params: {
-                      cId: item.cId.toString(),
-                    },
-                  })
-                }
-              >
-                <View
-                  style={{
-                    flexDirection: "row",
-                    marginBottom: 10,
-                    alignItems: "center",
-                    borderBottomColor: "#ddd",
-                    borderBottomWidth: 0.5,
-                    paddingBottom: 10,
+            data={convesations}
+            renderItem={({ item }) => {
+              const otherMembers = item.users.filter((u) => u.id !== user?.id);
+              return (
+                <TouchableOpacity
+                  onPress={() => {
+                    router.push({
+                      pathname: "/chat",
+                      params: {
+                        cId: item.cId.toString(),
+                      },
+                    });
                   }}
                 >
-                  <Image
-                    source={{ uri: item.users[0]?.picture }}
-                    style={{ height: 40, width: 40, borderRadius: 20 }}
-                  />
-                  {/* <View style={{ marginLeft: 4 }}>
-                    <Text>{item.users[0]?.fullName}</Text>
-                    <Text style={{ marginTop: 2 }}>
-                      {item.messages[item.messages.length - 1]?.text}
-                    </Text>
-                  </View>
-                  <Text style={{ marginStart: "auto" }}>
-                    {new Date(
-                      item.messages[item.messages.length - 1]?.createdAt
-                    ).toLocaleDateString()}
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      marginBottom: 10,
+                      alignItems: "center",
+                      borderBottomColor: "#ddd",
+                      borderBottomWidth: 0.5,
+                      paddingBottom: 10,
+                    }}
+                  >
+                    <Image
+                      source={{ uri: otherMembers[0]?.picture }}
+                      style={{ height: 40, width: 40, borderRadius: 20 }}
+                    />
+                    <View style={{ marginLeft: 4 }}>
+                      <Text>{otherMembers[0]?.fullName}</Text>
+                      {/* <Text style={{ marginTop: 2 }}>
+                    {item.messages[item.messages.length - 1]?.text}
                   </Text> */}
-                </View>
-              </Pressable>
-            )}
+                    </View>
+                    {/* <Text style={{ marginStart: "auto" }}>
+                  {new Date(
+                    item.messages[item.messages.length - 1]?.createdAt
+                  ).toLocaleDateString()}
+                </Text> */}
+                  </View>
+                </TouchableOpacity>
+              );
+            }}
           ></FlatList>
         </View>
       </SafeAreaView>

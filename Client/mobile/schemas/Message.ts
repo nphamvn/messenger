@@ -2,7 +2,10 @@ import Realm, { BSON, ObjectSchema } from "realm";
 import { Conversation } from "./Conversation";
 import { User } from "./User";
 
-export class Message extends Realm.Object<Message> {
+export class Message extends Realm.Object<
+  Message,
+  "cId" | "conversation" | "sender" | "text" | "status" | "createdAt"
+> {
   cId!: BSON.ObjectId;
   sId?: number;
   conversation!: Conversation;
@@ -18,7 +21,7 @@ export class Message extends Realm.Object<Message> {
       sId: "int?",
       conversation: "Conversation",
       sender: "User",
-      text: "string",
+      text: { type: "string", optional: false },
       status: { type: "string", default: "notSent" },
       createdAt: { type: "date", default: new Date() },
     },

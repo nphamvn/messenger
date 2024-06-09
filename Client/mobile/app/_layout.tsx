@@ -1,4 +1,4 @@
-import { Stack } from "expo-router";
+import { Stack, usePathname } from "expo-router";
 import React from "react";
 import { Auth0Provider } from "react-native-auth0";
 
@@ -7,6 +7,8 @@ import { schemas } from "../schemas";
 import { MessagingProvider } from "../hooks/messaging";
 
 export default function Root() {
+  const path = usePathname();
+  console.log("path: ", path);
   return (
     <Auth0Provider
       domain="dev-vzxphouz.us.auth0.com"
