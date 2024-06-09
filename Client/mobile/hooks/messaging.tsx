@@ -146,6 +146,8 @@ function useMessage(connection: signalR.HubConnection | undefined) {
       });
     } else {
       console.log("Message not found: ", clientId);
+
+      
     }
   };
 
