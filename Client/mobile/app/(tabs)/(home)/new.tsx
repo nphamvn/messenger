@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, TextInput, Modal } from "react-native";
+import { View, TextInput } from "react-native";
 
 export default function NewScreen() {
   return (
