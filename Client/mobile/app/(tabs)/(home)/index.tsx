@@ -14,7 +14,7 @@ import { appConfig } from "../../../constants/appConfig";
 import { Conversation } from "../../../schemas/Conversation";
 import { useQuery } from "@realm/react";
 import React from "react";
-import useAppDelegate from "../../../hooks/messaging";
+import useAppDelegate from "../../../hooks/useAppDelegate";
 
 export default function ConversationsScreen() {
   const { user } = useAppDelegate();

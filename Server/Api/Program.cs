@@ -52,7 +52,8 @@ builder.Services.AddCors(options =>
     });
 });
 
-builder.Services.AddSignalR();
+builder.Services.AddSignalR()
+    .AddMessagePackProtocol();
 
 var app = builder.Build();
 
