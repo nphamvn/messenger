@@ -26,7 +26,7 @@ public partial class ChatHub
         
         foreach (var user in message.Conversation.Users)
         {
-            foreach (var connectionId in Connections.GetConnections(user.UserId))
+            foreach (var connectionId in connections.GetConnections(user.UserId))
             {
                 await Clients.Client(connectionId).ReceiveMessageAction(messageId, actor.Id, action);
             }

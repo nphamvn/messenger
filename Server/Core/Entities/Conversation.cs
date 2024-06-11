@@ -11,4 +11,6 @@ public class Conversation
     public ICollection<Message> Messages { get; set; }
     
     public DateTime CreatedAt { get; set; }
+
+    public User CreatedBy { get; set; }
 }

@@ -11,7 +11,6 @@ public class SendMessageMessage
     public string[] MemberIds { get; set; } = [];
     public string Text { get; set; }
     public string? ClientMessageId { get; set; }
-    public string AckId { get; set; }
 }
 
 public partial class ChatHub
@@ -83,25 +82,17 @@ public partial class ChatHub
 
         foreach (var user in conversation.Users)
         {
-            foreach (var connectionId in Connections.GetConnections(user.UserId))
+            foreach (var connectionId in connections.GetConnections(user.UserId))
             {
-                await Clients.Client(connectionId).ReceiveMessage(
-                    new
-                    {
-                        conversation.Id,
-                        conversation.Name,
-                        conversation.CreatedAt
-                    }, new
-                    {
-                        message.Id,
-                        message.SenderId,
-                        message.Text,
-                        message.CreatedAt,
-                        pack.ClientMessageId
-                    });
+                await Clients.Client(connectionId).ReceiveMessage(new
+                {
+                    message.Id,
+                    message.SenderId,
+                    message.Text,
+                    message.CreatedAt,
+                    pack.ClientMessageId
+                });
             }
         }
-
-        await Clients.Caller.ReceiveAckMessage(pack.AckId, null);
     }
 }

@@ -52,6 +52,7 @@ builder.Services.AddCors(options =>
     });
 });
 
+builder.Services.AddKeyedSingleton<ConnectionMapping<string>>("ChatHubConnectionMapping");
 builder.Services.AddSignalR()
     .AddMessagePackProtocol();
 

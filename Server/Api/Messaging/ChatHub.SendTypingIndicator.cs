@@ -17,7 +17,7 @@ public partial class ChatHub
 
         foreach (var user in conversation.Users)
         {
-            foreach (var connectionId in Connections.GetConnections(user.UserId))
+            foreach (var connectionId in connections.GetConnections(user.UserId))
             {
                 await Clients.Client(connectionId).ReceiveTypingIndicator(conversationId, userId, isTyping);
             }
