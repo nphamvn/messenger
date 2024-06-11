@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useAuth0 } from "react-native-auth0";
 import { BSON, UpdateMode } from "realm";
 import { User, Conversation, Message } from "schemas";
-import useAppDelegate from "./messaging";
+import useAppDelegate from "./useAppDelegate";
 import { MessageAction } from "@schemas/MessageAction";
 
 export default function useConversation(

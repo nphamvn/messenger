@@ -4,7 +4,7 @@ import { Auth0Provider } from "react-native-auth0";
 
 import { RealmProvider } from "@realm/react";
 import { schemas } from "../schemas";
-import { AppDelegateProvider } from "../hooks/messaging";
+import { AppDelegateProvider } from "../hooks/useAppDelegate";
 
 export default function Root() {
   const path = usePathname();

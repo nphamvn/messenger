@@ -8,4 +8,6 @@ public interface IChatClient
     Task ReceiveTypingIndicator(int conversationId, string userId, bool isTyping);
     
     Task ReceiveMessageAction(int messageId, string userId, string action);
+
+    Task ReceivePing(ReceivePingMessage message);
 }
