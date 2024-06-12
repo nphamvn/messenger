@@ -34,7 +34,7 @@
     "@babel/core": "^7.24.7",
     "@types/react": "~18.2.45",
     "@types/uuid": "^9.0.8",
-    "eslint": "^8.57.0",
+    "eslint": "^9.4.0",
     "eslint-config-expo": "^7.0.0",
     "typescript": "~5.4.5"
   },
