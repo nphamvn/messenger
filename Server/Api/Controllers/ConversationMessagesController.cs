@@ -41,7 +41,8 @@ public class ConversationMessagesController(
             Mine = m.SenderId == userId
         }));
     }
-
+    
+    [Route("conversations/messages")]
     public async Task<IActionResult> PostMessage(PostMessagePayload payload)
     {
         var sender = await dbContext.Users.SingleAsync(u => u.Id == User.GetUserId());
