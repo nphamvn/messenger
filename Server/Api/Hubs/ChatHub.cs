@@ -3,7 +3,7 @@ using Core;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 
-namespace Api.Messaging;
+namespace Api.Hubs;
 
 [Authorize]
 public partial class ChatHub(

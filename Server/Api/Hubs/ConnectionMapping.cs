@@ -1,4 +1,4 @@
-namespace Api.Messaging;
+namespace Api.Hubs;
 
 public class ConnectionMapping<T> where T : notnull
 {

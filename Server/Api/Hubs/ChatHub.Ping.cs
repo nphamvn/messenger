@@ -1,4 +1,4 @@
-namespace Api.Messaging;
+namespace Api.Hubs;
 
 public partial class ChatHub
 {

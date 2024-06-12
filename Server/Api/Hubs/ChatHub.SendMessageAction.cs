@@ -2,7 +2,7 @@ using Api.Extensions;
 using Core.Entities;
 using Microsoft.EntityFrameworkCore;
 
-namespace Api.Messaging;
+namespace Api.Hubs;
 
 public partial class ChatHub
 {

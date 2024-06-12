@@ -1,8 +1,8 @@
-using Api.Endpoints;
-using Api.Messaging;
+using Api.Hubs;
 using Core;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using ChatHub = Api.Hubs.ChatHub;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,6 +10,8 @@ var builder = WebApplication.CreateBuilder(args);
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddControllers();
+builder.Services.AddHealthChecks();
 
 builder.Services.AddAuthentication()
     .AddJwtBearer(options =>
@@ -70,16 +72,8 @@ app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapGetConversation();
-app.MapGetConversations();
-app.MapGetOneToOneConversation();
-app.MapGetConversationMessages();
-
-app.MapPostContacts();
-app.MapGetContacts();
-
-app.MapGetPeople();
-
-app.MapChatHub();
+app.MapHealthChecks("/health");
+app.MapControllers();
+app.MapHub<ChatHub>("/chat");
 
 app.Run();
