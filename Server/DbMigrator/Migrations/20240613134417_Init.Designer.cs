@@ -12,15 +12,15 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace DbMigrator.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20240427080811_Initial")]
-    partial class Initial
+    [Migration("20240613134417_Init")]
+    partial class Init
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "8.0.4")
+                .HasAnnotation("ProductVersion", "8.0.6")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -36,10 +36,15 @@ namespace DbMigrator.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("CreatedById")
+                        .HasColumnType("text");
+
                     b.Property<string>("Name")
                         .HasColumnType("text");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("CreatedById");
 
                     b.ToTable("Conversations");
                 });
@@ -67,9 +72,6 @@ namespace DbMigrator.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("ClientId")
-                        .HasColumnType("text");
-
                     b.Property<int>("ConversationId")
                         .HasColumnType("integer");
 
@@ -94,6 +96,30 @@ namespace DbMigrator.Migrations
                     b.HasIndex("SenderId");
 
                     b.ToTable("Messages");
+                });
+
+            modelBuilder.Entity("Core.Entities.MessageAction", b =>
+                {
+                    b.Property<string>("UserId")
+                        .HasColumnType("text");
+
+                    b.Property<string>("MessageId")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Action")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("ActionAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("MessageId1")
+                        .HasColumnType("integer");
+
+                    b.HasKey("UserId", "MessageId", "Action");
+
+                    b.HasIndex("MessageId1");
+
+                    b.ToTable("MessageAction");
                 });
 
             modelBuilder.Entity("Core.Entities.User", b =>
@@ -130,6 +156,15 @@ namespace DbMigrator.Migrations
                     b.HasIndex("ContactId");
 
                     b.ToTable("Contacts");
+                });
+
+            modelBuilder.Entity("Core.Entities.Conversation", b =>
+                {
+                    b.HasOne("Core.Entities.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById");
+
+                    b.Navigation("CreatedBy");
                 });
 
             modelBuilder.Entity("Core.Entities.ConversationUser", b =>
@@ -170,6 +205,25 @@ namespace DbMigrator.Migrations
                     b.Navigation("Sender");
                 });
 
+            modelBuilder.Entity("Core.Entities.MessageAction", b =>
+                {
+                    b.HasOne("Core.Entities.Message", "Message")
+                        .WithMany("Actions")
+                        .HasForeignKey("MessageId1")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Core.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Message");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("Core.Entities.UserContact", b =>
                 {
                     b.HasOne("Core.Entities.User", "Contact")
@@ -194,6 +248,11 @@ namespace DbMigrator.Migrations
                     b.Navigation("Messages");
 
                     b.Navigation("Users");
+                });
+
+            modelBuilder.Entity("Core.Entities.Message", b =>
+                {
+                    b.Navigation("Actions");
                 });
 #pragma warning restore 612, 618
         }

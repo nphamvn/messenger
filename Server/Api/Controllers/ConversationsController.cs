@@ -88,6 +88,14 @@ public class ConversationsController(AppDbContext dbContext) : BaseController
             return Ok(new
             {
                 conversation.Id,
+                conversation.Name,
+                conversation.CreatedAt,
+                Members = conversation.Users.Select(u => new
+                {
+                    Id = u.UserId,
+                    u.User.FullName,
+                    u.User.Picture
+                }).ToList()
             });
         }
 

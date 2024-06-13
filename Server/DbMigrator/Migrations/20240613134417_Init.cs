@@ -7,25 +7,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace DbMigrator.Migrations
 {
     /// <inheritdoc />
-    public partial class Initial : Migration
+    public partial class Init : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.CreateTable(
-                name: "Conversations",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    Name = table.Column<string>(type: "text", nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Conversations", x => x.Id);
-                });
-
             migrationBuilder.CreateTable(
                 name: "Users",
                 columns: table => new
@@ -65,6 +51,26 @@ namespace DbMigrator.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Conversations",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Name = table.Column<string>(type: "text", nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    CreatedById = table.Column<string>(type: "text", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Conversations", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Conversations_Users_CreatedById",
+                        column: x => x.CreatedById,
+                        principalTable: "Users",
+                        principalColumn: "Id");
+                });
+
+            migrationBuilder.CreateTable(
                 name: "ConversationUser",
                 columns: table => new
                 {
@@ -98,8 +104,7 @@ namespace DbMigrator.Migrations
                     SenderId = table.Column<string>(type: "text", nullable: false),
                     Type = table.Column<int>(type: "integer", nullable: false),
                     Text = table.Column<string>(type: "text", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    ClientId = table.Column<string>(type: "text", nullable: true)
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -118,15 +123,52 @@ namespace DbMigrator.Migrations
                         onDelete: ReferentialAction.Cascade);
                 });
 
+            migrationBuilder.CreateTable(
+                name: "MessageAction",
+                columns: table => new
+                {
+                    UserId = table.Column<string>(type: "text", nullable: false),
+                    MessageId = table.Column<string>(type: "text", nullable: false),
+                    Action = table.Column<string>(type: "text", nullable: false),
+                    ActionAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    MessageId1 = table.Column<int>(type: "integer", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_MessageAction", x => new { x.UserId, x.MessageId, x.Action });
+                    table.ForeignKey(
+                        name: "FK_MessageAction_Messages_MessageId1",
+                        column: x => x.MessageId1,
+                        principalTable: "Messages",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_MessageAction_Users_UserId",
+                        column: x => x.UserId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
             migrationBuilder.CreateIndex(
                 name: "IX_Contacts_ContactId",
                 table: "Contacts",
                 column: "ContactId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Conversations_CreatedById",
+                table: "Conversations",
+                column: "CreatedById");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_ConversationUser_ConversationId",
                 table: "ConversationUser",
                 column: "ConversationId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_MessageAction_MessageId1",
+                table: "MessageAction",
+                column: "MessageId1");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Messages_ConversationId",
@@ -147,6 +189,9 @@ namespace DbMigrator.Migrations
 
             migrationBuilder.DropTable(
                 name: "ConversationUser");
+
+            migrationBuilder.DropTable(
+                name: "MessageAction");
 
             migrationBuilder.DropTable(
                 name: "Messages");

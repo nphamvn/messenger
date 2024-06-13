@@ -33,10 +33,15 @@ namespace DbMigrator.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("CreatedById")
+                        .HasColumnType("text");
+
                     b.Property<string>("Name")
                         .HasColumnType("text");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("CreatedById");
 
                     b.ToTable("Conversations");
                 });
@@ -148,6 +153,15 @@ namespace DbMigrator.Migrations
                     b.HasIndex("ContactId");
 
                     b.ToTable("Contacts");
+                });
+
+            modelBuilder.Entity("Core.Entities.Conversation", b =>
+                {
+                    b.HasOne("Core.Entities.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById");
+
+                    b.Navigation("CreatedBy");
                 });
 
             modelBuilder.Entity("Core.Entities.ConversationUser", b =>
