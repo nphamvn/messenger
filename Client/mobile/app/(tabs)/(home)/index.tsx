@@ -66,7 +66,9 @@ export default function ConversationsScreen() {
             }
             data={convesations}
             renderItem={({ item }) => {
-              const otherMembers = item.users.filter((u) => u.id !== user?.id);
+              const otherMembers = item.members.filter(
+                (u) => u.id !== user?.id
+              );
               return (
                 <TouchableOpacity
                   onPress={() => {

@@ -63,7 +63,7 @@ export function useSyncMessages(user: User | undefined) {
               realm.create(Conversation, {
                 cId: new BSON.ObjectId(),
                 sId: conversation.id,
-                users: [user, ...otherUsers],
+                members: [user, ...otherUsers],
               });
             });
           });

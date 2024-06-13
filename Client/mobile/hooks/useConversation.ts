@@ -1,11 +1,12 @@
 import { useQuery, useRealm } from "@realm/react";
 import { appConfig } from "constants/appConfig";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useAuth0 } from "react-native-auth0";
 import { BSON, UpdateMode } from "realm";
 import { User, Conversation, Message } from "schemas";
 import useAppDelegate from "./useAppDelegate";
 import { MessageAction } from "@schemas/MessageAction";
+import { useConversationTypingIndicator } from "./useTypingIndicator";
 
 export default function useConversation(
   conversationId?: string,
@@ -31,6 +32,8 @@ export default function useConversation(
     },
     [conversation]
   );
+
+  const typingUsers = useConversationTypingIndicator(conversation);
 
   useEffect(() => {
     if (conversation) {
@@ -66,7 +69,7 @@ export default function useConversation(
   function createConversation(users: User[]) {
     return realm.create(Conversation, {
       cId: new BSON.ObjectId(),
-      users: users,
+      members: users,
     });
   }
 
@@ -235,7 +238,7 @@ export default function useConversation(
           return realm.create(Conversation, {
             cId: new BSON.ObjectId(),
             sId: id,
-            users: [user!, member],
+            members: [user!, member],
           });
         }
         return null;
@@ -244,7 +247,6 @@ export default function useConversation(
   };
 
   useEffect(() => {
-    console.log("Getting conversation");
     (async () => {
       let conversation: Conversation | null = null;
       if (conversationId) {
@@ -254,12 +256,13 @@ export default function useConversation(
       }
       setConversation(conversation);
     })();
-  }, []);
+  }, [conversationId, userId]);
 
   return {
     conversation,
     messages,
     sendMessage,
     deleteMessage,
+    typingUsers,
   };
 }

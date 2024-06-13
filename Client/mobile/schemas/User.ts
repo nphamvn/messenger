@@ -15,7 +15,7 @@ export class User extends Realm.Object<User> {
       conversations: {
         type: "linkingObjects",
         objectType: "Conversation",
-        property: "users",
+        property: "members",
       },
     },
     primaryKey: "id",

@@ -1,9 +1,10 @@
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { Message, MessageAction } from "@schemas/index";
 import { useQuery, useRealm } from "@realm/react";
 import * as signalR from "@microsoft/signalr";
-import { BSON, UpdateMode } from "realm";
+import { BSON } from "realm";
 import { appConfig } from "constants/appConfig";
+import useData from "./useData";
 
 export function useMessage(connection: signalR.HubConnection | undefined) {
   usePostMessage(connection);
@@ -13,20 +14,33 @@ function usePostMessage(connection: signalR.HubConnection | undefined) {
   const createdMessageActions =
     useQuery(MessageAction).filtered("status = 'created'");
   const realm = useRealm();
+  const { getUser, getConversation } = useData();
 
   const handleReceiveMessage = async (message: {
+    id: number;
     clientMessageId: string;
     conversationId: number;
+    senderId: string;
   }) => {
     const clientId = message.clientMessageId;
-    console.log("clientId: ", clientId);
     const msg = realm.objectForPrimaryKey(Message, new BSON.ObjectId(clientId));
     if (!msg) {
+      const conversation = await getConversation(message.conversationId);
+      if (!conversation) {
+        return;
+      }
+
+      const sender = await getUser(message.senderId);
+      if (!sender) {
+        return;
+      }
+
       realm.write(() => {
         realm.create(Message, {
-          _id: new BSON.ObjectId(clientId),
-          conversation: null,
-          status: "received",
+          cId: new BSON.ObjectId(clientId),
+          sId: message.id,
+          conversation: conversation,
+          sender: sender,
         });
       });
     }
@@ -49,7 +63,7 @@ function usePostMessage(connection: signalR.HubConnection | undefined) {
             method: "POST",
             body: JSON.stringify({
               ConversationId: message.conversation.sId,
-              MemberIds: message.conversation.users.map((u) => u.id),
+              MemberIds: message.conversation.members.map((u) => u.id),
               Text: message.text,
             }),
           }
