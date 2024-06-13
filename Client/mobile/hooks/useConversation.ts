@@ -21,6 +21,7 @@ export default function useConversation(
   const realm = useRealm();
 
   const [conversation, setConversation] = useState<Conversation | null>(null);
+  const [users, setUsers] = useState<User[]>([]);
 
   const messages = useQuery(
     {
@@ -56,14 +57,13 @@ export default function useConversation(
 
     const json = await response.json();
 
-    realm.write(() => {
-      user = realm.create(User, {
+    return realm.write(() => {
+      return realm.create(User, {
         id: json.id,
         fullName: json.fullName,
         picture: json.picture,
       });
     });
-    return user;
   };
 
   function createConversation(users: User[]) {
@@ -88,19 +88,15 @@ export default function useConversation(
     });
   }
   const sendMessage = async (text: string) => {
-    realm.write(async () => {
+    realm.write(() => {
       if (!conversation) {
-        if (!userId) {
-          throw new Error("No userId");
-        }
-        const member = await getUser(userId);
-        if (!member) {
-          console.error("Member not found");
-          return;
-        }
-        // Create a new conversation
-        const newConversation = createConversation([user!, member]);
+        const newConversation = realm.create(Conversation, {
+          cId: new BSON.ObjectId(),
+          members: users,
+        });
+
         // Create a new message
+        console.log("Creating new message");
         const message = createMessage(text, newConversation, user!);
         realm.create(MessageAction, { action: "send", message: message });
         setConversation(newConversation);
@@ -203,29 +199,19 @@ export default function useConversation(
     );
   };
 
-  const getO2OConversation = async (userId: string) => {
+  const getO2OConversation = async (member: User) => {
     return realm.write(async () => {
-      const member =
-        realm.objectForPrimaryKey(User, userId) ||
-        realm.create(User, {
-          id: userId,
-          fullName: "todo: ",
-          picture: "https://picsum.photos/200",
-        });
-
       const conv = member
-        .linkingObjects(Conversation, "users")
-        .filtered("users.@count == 2")[0];
+        .linkingObjects(Conversation, "members")
+        .filtered("members.@count == 2")[0];
 
-      console.log("conv", conv);
       if (conv) {
-        console.log("Returning existing conversation");
         return conv;
       } else {
         console.log("Getting conversation from API");
         const accessToken = (await getCredentials())?.accessToken;
         const response = await fetch(
-          `${appConfig.API_URL}/conversations/o2o/${userId}`,
+          `${appConfig.API_URL}/conversations/o2o/${member.id}`,
           {
             method: "GET",
             headers: {
@@ -233,6 +219,7 @@ export default function useConversation(
             },
           }
         );
+        console.log("getO2OConversation: ", response.status);
         if (response.ok) {
           const { id } = await response.json();
           return realm.create(Conversation, {
@@ -241,6 +228,7 @@ export default function useConversation(
             members: [user!, member],
           });
         }
+
         return null;
       }
     });
@@ -251,8 +239,14 @@ export default function useConversation(
       let conversation: Conversation | null = null;
       if (conversationId) {
         conversation = await getConversation(conversationId);
+        if (conversation) {
+          const members = conversation.members.map((m) => m);
+          setUsers(members);
+        }
       } else if (userId) {
-        conversation = await getO2OConversation(userId);
+        const member = await getUser(userId);
+        setUsers([user!, member]);
+        conversation = await getO2OConversation(member);
       }
       setConversation(conversation);
     })();
@@ -260,6 +254,7 @@ export default function useConversation(
 
   return {
     conversation,
+    users,
     messages,
     sendMessage,
     deleteMessage,

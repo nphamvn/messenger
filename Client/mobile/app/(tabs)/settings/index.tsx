@@ -6,7 +6,7 @@ import {
   View,
   Image,
 } from "react-native";
-import useAppDelegate from "@hooks/messaging";
+import useAppDelegate from "@hooks/useAppDelegate";
 import { useAuth0 } from "react-native-auth0";
 
 export default function SettingsScreen() {

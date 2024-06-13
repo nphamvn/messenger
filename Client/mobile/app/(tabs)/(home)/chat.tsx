@@ -17,16 +17,17 @@ import {
   Modal,
 } from "react-native";
 import { Message } from "@schemas/index";
-import useAppDelegate from "@hooks/messaging";
-import useConversation from "@hooks/conversation";
+import useAppDelegate from "@hooks/useAppDelegate";
+import useConversation from "@hooks/useConversation";
 
 export default function ChatScreen() {
   const { user } = useAppDelegate();
+
   const { cId, uId } = useLocalSearchParams<{
     cId?: string;
     uId?: string;
   }>();
-  const { conversation, messages, sendMessage, deleteMessage } =
+  const { conversation, messages, sendMessage, deleteMessage, users } =
     useConversation(cId, uId);
 
   const [text, setText] = useState<string>("");
@@ -68,11 +69,19 @@ export default function ChatScreen() {
     }
   }, [messageContextModalVisible, message.current]);
 
+  const handleSendMessagePress = async () => {
+    if (text.length === 0) {
+      return;
+    }
+    await sendMessage(text);
+    setText("");
+    messageInputRef.current?.focus();
+  };
   return (
     <>
       <Stack.Screen
         options={{
-          title: conversation?.users
+          title: users
             .filter((m) => m.id !== user?.id)
             .map((m) => m.fullName)
             .join(", "),
@@ -110,7 +119,7 @@ export default function ChatScreen() {
                     <View style={styles.messageWrapper}>
                       <Image
                         source={{
-                          uri: conversation?.users.find(
+                          uri: conversation?.members.find(
                             (m) => m.id === item.sender?.id
                           )?.picture,
                         }}
@@ -151,14 +160,7 @@ export default function ChatScreen() {
                 ></TextInput>
                 <Button
                   disabled={text.length === 0}
-                  onPress={async () => {
-                    if (text.length === 0) {
-                      return;
-                    }
-                    await sendMessage(text);
-                    setText("");
-                    messageInputRef.current?.focus();
-                  }}
+                  onPress={handleSendMessagePress}
                   title="Send"
                 />
               </View>

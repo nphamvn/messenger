@@ -57,19 +57,22 @@ function usePostMessage(connection: signalR.HubConnection | undefined) {
     const sendMessages = async () => {
       createdMessageActions.forEach(async (action) => {
         const { message } = action;
+        console.log("Sending message: ", message);
         const response = await fetch(
           `${appConfig.API_URL}/conversations/messages`,
           {
             method: "POST",
             body: JSON.stringify({
-              ConversationId: message.conversation.sId,
+              ConversationId: message.conversation.sId ?? null,
               MemberIds: message.conversation.members.map((u) => u.id),
               Text: message.text,
             }),
           }
         );
+        console.log("sendMessages: ", response.status);
         if (response.ok) {
           realm.write(() => {
+            console.log("Message sent");
             message.status = "sent";
             realm.delete(action);
           });

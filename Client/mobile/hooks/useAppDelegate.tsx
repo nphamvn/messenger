@@ -7,6 +7,7 @@ import { useDataCleaner } from "./useDataCleaner";
 import { useMessage } from "./useMessage";
 import { useUser } from "./useUser";
 import { useConnector } from "./useConnector";
+import useDebugger from "./useDebugger";
 
 interface AppDelegateContextType {
   connection: signalR.HubConnection | undefined;
@@ -26,6 +27,7 @@ export default function useAppDelegate(): AppDelegateContextType {
 }
 
 export const AppDelegateProvider = ({ children }: { children: ReactNode }) => {
+  useDebugger();
   useRouteGuard();
   useDataCleaner();
 

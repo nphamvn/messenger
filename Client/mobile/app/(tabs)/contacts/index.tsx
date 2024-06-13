@@ -23,12 +23,14 @@ export default function ContactsScreen() {
   const [searchText, setSearchText] = useState("");
   useEffect(() => {
     (async () => {
+      console.log("Fetching contacts");
       const credentials = await getCredentials();
       const response = await fetch(`${appConfig.API_URL}/contacts`, {
         headers: {
           Authorization: `Bearer ${credentials?.accessToken}`,
         },
       });
+      console.log(response);
       const data = await response.json();
       setContacts(data);
     })();
@@ -46,7 +48,7 @@ export default function ContactsScreen() {
     (async () => {
       const credentials = await getCredentials();
       const response = await fetch(
-        `${appConfig.API_URL}/people?search=${searchText}`,
+        `${appConfig.API_URL}/users?search=${searchText}`,
         {
           headers: {
             Authorization: `Bearer ${credentials?.accessToken}`,
