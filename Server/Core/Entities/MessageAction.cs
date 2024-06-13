@@ -3,7 +3,7 @@
 public class MessageAction
 {
     public string UserId { get; set; }
-    public string MessageId { get; set; }
+    public int MessageId { get; set; }
     
     public string Action { get; set; }
     

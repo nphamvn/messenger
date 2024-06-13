@@ -128,17 +128,16 @@ namespace DbMigrator.Migrations
                 columns: table => new
                 {
                     UserId = table.Column<string>(type: "text", nullable: false),
-                    MessageId = table.Column<string>(type: "text", nullable: false),
+                    MessageId = table.Column<int>(type: "integer", nullable: false),
                     Action = table.Column<string>(type: "text", nullable: false),
-                    ActionAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    MessageId1 = table.Column<int>(type: "integer", nullable: false)
+                    ActionAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_MessageAction", x => new { x.UserId, x.MessageId, x.Action });
                     table.ForeignKey(
-                        name: "FK_MessageAction_Messages_MessageId1",
-                        column: x => x.MessageId1,
+                        name: "FK_MessageAction_Messages_MessageId",
+                        column: x => x.MessageId,
                         principalTable: "Messages",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -166,9 +165,9 @@ namespace DbMigrator.Migrations
                 column: "ConversationId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_MessageAction_MessageId1",
+                name: "IX_MessageAction_MessageId",
                 table: "MessageAction",
-                column: "MessageId1");
+                column: "MessageId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Messages_ConversationId",

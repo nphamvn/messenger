@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace DbMigrator.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20240613134417_Init")]
+    [Migration("20240613135113_Init")]
     partial class Init
     {
         /// <inheritdoc />
@@ -103,8 +103,8 @@ namespace DbMigrator.Migrations
                     b.Property<string>("UserId")
                         .HasColumnType("text");
 
-                    b.Property<string>("MessageId")
-                        .HasColumnType("text");
+                    b.Property<int>("MessageId")
+                        .HasColumnType("integer");
 
                     b.Property<string>("Action")
                         .HasColumnType("text");
@@ -112,12 +112,9 @@ namespace DbMigrator.Migrations
                     b.Property<DateTime>("ActionAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int>("MessageId1")
-                        .HasColumnType("integer");
-
                     b.HasKey("UserId", "MessageId", "Action");
 
-                    b.HasIndex("MessageId1");
+                    b.HasIndex("MessageId");
 
                     b.ToTable("MessageAction");
                 });
@@ -209,7 +206,7 @@ namespace DbMigrator.Migrations
                 {
                     b.HasOne("Core.Entities.Message", "Message")
                         .WithMany("Actions")
-                        .HasForeignKey("MessageId1")
+                        .HasForeignKey("MessageId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
