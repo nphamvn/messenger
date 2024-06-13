@@ -10,6 +10,7 @@ namespace Api.Controllers;
 [Route("[controller]")]
 public class ConversationsController(AppDbContext dbContext) : BaseController
 {
+    [HttpGet]
     public async Task<IActionResult> GetConversations()
     {
         var userId = User.GetUserId();
@@ -47,7 +48,8 @@ public class ConversationsController(AppDbContext dbContext) : BaseController
             };
         }));
     }
-
+    
+    [HttpGet("{id:int}")]
     public async Task<IActionResult> GetConversation(int id)
     {
         var userId = User.GetUserId();
@@ -71,6 +73,7 @@ public class ConversationsController(AppDbContext dbContext) : BaseController
         });
     }
     
+    [HttpGet("o2o/{partnerId}")]
     public async Task<IActionResult> GetOneToOneConversation(string partnerId)
     {
         var user = await dbContext.Users.SingleAsync(u => u.Id == User.GetUserId());

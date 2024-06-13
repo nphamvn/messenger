@@ -10,6 +10,7 @@ namespace Api.Controllers;
 [Route("[controller]")]
 public class ContactsController (AppDbContext dbContext): BaseController
 {
+    [HttpGet]
     public async Task<IActionResult> GetContacts()
     {
         var userId = HttpContext.User.GetUserId();
@@ -27,6 +28,7 @@ public class ContactsController (AppDbContext dbContext): BaseController
         }));
     }
     
+    [HttpPost]
     public async Task<IActionResult> PostContacts(PostContactPayload payload)
     {
         var userId = User.GetUserId();

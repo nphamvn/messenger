@@ -17,6 +17,7 @@ public class ConversationMessagesController(
     [FromKeyedServices("ChatHubConnectionMapping")]
     ConnectionMapping<string> connections) : BaseController
 {
+    [HttpGet]
     public async Task<IActionResult> GetConversationMessages(int conversationId)
     {
         var userId = User.GetUserId();
@@ -42,7 +43,7 @@ public class ConversationMessagesController(
         }));
     }
     
-    [Route("conversations/messages")]
+    [HttpPost("conversations/messages")]
     public async Task<IActionResult> PostMessage(PostMessagePayload payload)
     {
         var sender = await dbContext.Users.SingleAsync(u => u.Id == User.GetUserId());

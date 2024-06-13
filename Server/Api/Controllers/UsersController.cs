@@ -8,6 +8,7 @@ namespace Api.Controllers;
 [Route("[controller]")]
 public class UsersController(AppDbContext dbContext) : BaseController
 {
+    [HttpGet]
     public async Task<IActionResult> GetPeople()
     {
         var userId = User.GetUserId();
