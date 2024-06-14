@@ -36,23 +36,25 @@ public class ConversationMessagesController(
         {
             m.Id,
             m.SenderId,
-            m.ConversationId,
             m.Text,
             m.CreatedAt,
-            Mine = m.SenderId == userId
         }));
     }
-    
+
     [HttpPost("conversations/messages")]
     public async Task<IActionResult> PostMessage(PostMessagePayload payload)
     {
         var sender = await dbContext.Users.SingleAsync(u => u.Id == User.GetUserId());
-        var conversation = await GetOrCreateConversation(payload, dbContext, sender);
+        var shouldCreateConversation = payload.ConversationId is null;
+        var conversation = shouldCreateConversation
+            ? await CreateConversation(payload, dbContext, sender)
+            : await GetConversation(payload, dbContext, sender);
+
         var message = await CreateMessage(dbContext, conversation, sender, payload);
         await dbContext.SaveChangesAsync();
 
-        var isNewConversation = payload.ConversationId is null;
-        if (isNewConversation)
+
+        if (shouldCreateConversation)
         {
             foreach (var conversationUser in conversation.Users)
             {
@@ -84,7 +86,10 @@ public class ConversationMessagesController(
             }
         }
 
-        return Created();
+        return Created(message.Id.ToString(), new
+        {
+            message.Id,
+        });
     }
 
     private static async Task<Message> CreateMessage(AppDbContext dbContext, Conversation conversation, User sender,
@@ -103,56 +108,53 @@ public class ConversationMessagesController(
         return message;
     }
 
-    private static async Task<Conversation> GetOrCreateConversation(PostMessagePayload payload, AppDbContext dbContext,
+    private static async Task<Conversation> CreateConversation(PostMessagePayload payload, AppDbContext dbContext,
         User sender)
     {
-        Conversation conversation;
+        var otherMemberIds = payload.MemberIds
+            .Where(id => id != sender.Id)
+            .Distinct()
+            .ToList();
 
-        if (payload.ConversationId is not null)
+        var members = await dbContext.Users
+            .Where(u => otherMemberIds.Contains(u.Id))
+            .ToListAsync();
+
+        var conversation = new Conversation
         {
-            conversation = await dbContext.Conversations
-                .Include(c => c.Users)
-                .SingleAsync(c => c.Id == payload.ConversationId && c.Users.Any(u => u.User == sender));
-        }
-        else
+            CreatedBy = sender
+        };
+
+        conversation.Users.Add(new ConversationUser
         {
-            var otherMemberIds = payload.MemberIds
-                .Where(id => id != sender.Id)
-                .Distinct()
-                .ToList();
+            User = sender,
+            Conversation = conversation
+        });
 
-            var members = await dbContext.Users
-                .Where(u => otherMemberIds.Contains(u.Id))
-                .ToListAsync();
-
-            conversation = new Conversation
-            {
-                CreatedBy = sender
-            };
-
+        foreach (var member in members)
+        {
             conversation.Users.Add(new ConversationUser
             {
-                User = sender,
+                User = member,
                 Conversation = conversation
             });
-
-            foreach (var member in members)
-            {
-                conversation.Users.Add(new ConversationUser
-                {
-                    User = member,
-                    Conversation = conversation
-                });
-            }
-
-            if (conversation.Users.Count < 2)
-            {
-                throw new Exception("Conversation must have at least 2 members");
-            }
-
-            await dbContext.Conversations.AddAsync(conversation);
         }
 
+        if (conversation.Users.Count < 2)
+        {
+            throw new Exception("Conversation must have at least 2 members");
+        }
+
+        await dbContext.Conversations.AddAsync(conversation);
+
         return conversation;
+    }
+
+    private static async Task<Conversation> GetConversation(PostMessagePayload payload, AppDbContext dbContext,
+        User sender)
+    {
+        return await dbContext.Conversations
+            .Include(c => c.Users)
+            .SingleAsync(c => c.Id == payload.ConversationId && c.Users.Any(u => u.User == sender));
     }
 }

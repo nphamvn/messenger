@@ -13,7 +13,7 @@ public class ContactsController (AppDbContext dbContext): BaseController
     [HttpGet]
     public async Task<IActionResult> GetContacts()
     {
-        var userId = HttpContext.User.GetUserId();
+        var userId = User.GetUserId();
         var contacts = await dbContext.Contacts
             .Include(c => c.Contact)
             .Where(c => c.UserId == userId)
