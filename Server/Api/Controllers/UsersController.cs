@@ -29,4 +29,21 @@ public class UsersController(AppDbContext dbContext) : BaseController
             IsContact = contacts.Exists(c => c.Contact == p)
         }));
     }
+
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetUser(string id)
+    {
+        var user = await dbContext.Users.FindAsync(id);
+        if (user == null)
+        {
+            return NotFound();
+        }
+
+        return Ok(new
+        {
+            user.Id,
+            user.FullName,
+            user.Picture,
+        });
+    }
 }
