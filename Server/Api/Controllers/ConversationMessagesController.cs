@@ -122,7 +122,8 @@ public class ConversationMessagesController(
 
         var conversation = new Conversation
         {
-            CreatedBy = sender
+            CreatedBy = sender,
+            Users = []
         };
 
         conversation.Users.Add(new ConversationUser
