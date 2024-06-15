@@ -80,6 +80,7 @@ public class ConversationMessagesController(
                 await chatHub.Clients.Client(connectionId).ReceiveMessage(new
                 {
                     message.Id,
+                    payload.ClientMessageId,
                     message.ConversationId,
                     message.SenderId,
                     message.Text,
