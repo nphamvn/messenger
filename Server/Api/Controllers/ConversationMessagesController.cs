@@ -1,6 +1,7 @@
 ﻿using Api.Extensions;
 using Api.Hubs;
 using Api.Models.Messages;
+using Api.Services;
 using Core;
 using Core.Entities;
 using Microsoft.AspNetCore.Mvc;
@@ -13,6 +14,7 @@ namespace Api.Controllers;
 [Route("conversations/{conversationId:int}/messages")]
 public class ConversationMessagesController(
     AppDbContext dbContext,
+    IConversationService conversationService,
     IHubContext<ChatHub, IChatClient> chatHub,
     [FromKeyedServices("ChatHubConnectionMapping")]
     ConnectionMapping<string> connections) : BaseController
@@ -47,8 +49,8 @@ public class ConversationMessagesController(
         var sender = await dbContext.Users.SingleAsync(u => u.Id == User.GetUserId());
         var shouldCreateConversation = payload.ConversationId is null;
         var conversation = shouldCreateConversation
-            ? await CreateConversation(payload, dbContext, sender)
-            : await GetConversation(payload, dbContext, sender);
+            ? await CreateConversation(payload, sender)
+            : await GetConversation(payload, sender);
 
         var message = await CreateMessage(dbContext, conversation, sender, payload);
         await dbContext.SaveChangesAsync();
@@ -89,6 +91,7 @@ public class ConversationMessagesController(
         return Created(message.Id.ToString(), new
         {
             message.Id,
+            message.ConversationId,
         });
     }
 
@@ -108,13 +111,27 @@ public class ConversationMessagesController(
         return message;
     }
 
-    private static async Task<Conversation> CreateConversation(PostMessagePayload payload, AppDbContext dbContext,
+    private async Task<Conversation> CreateConversation(PostMessagePayload payload,
         User sender)
     {
         var otherMemberIds = payload.MemberIds
             .Where(id => id != sender.Id)
             .Distinct()
             .ToList();
+
+        if (otherMemberIds.Count < 1)
+        {
+            throw new Exception("Conversation must have at least 2 members");
+        }
+
+        if (otherMemberIds.Count == 1)
+        {
+            var o2oConversation = await conversationService.GetOneToOneConversation([sender.Id, otherMemberIds[0]]);
+            if (o2oConversation is not null)
+            {
+                return o2oConversation;
+            }
+        }
 
         var members = await dbContext.Users
             .Where(u => otherMemberIds.Contains(u.Id))
@@ -141,17 +158,13 @@ public class ConversationMessagesController(
             });
         }
 
-        if (conversation.Users.Count < 2)
-        {
-            throw new Exception("Conversation must have at least 2 members");
-        }
 
         await dbContext.Conversations.AddAsync(conversation);
 
         return conversation;
     }
 
-    private static async Task<Conversation> GetConversation(PostMessagePayload payload, AppDbContext dbContext,
+    private async Task<Conversation> GetConversation(PostMessagePayload payload,
         User sender)
     {
         return await dbContext.Conversations

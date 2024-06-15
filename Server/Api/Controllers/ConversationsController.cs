@@ -1,14 +1,13 @@
-﻿using System.Linq.Expressions;
-using Api.Extensions;
+﻿using Api.Extensions;
+using Api.Services;
 using Core;
-using Core.Entities;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace Api.Controllers;
 
 [Route("[controller]")]
-public class ConversationsController(AppDbContext dbContext) : BaseController
+public class ConversationsController(AppDbContext dbContext, IConversationService conversationService) : BaseController
 {
     [HttpGet]
     public async Task<IActionResult> GetConversations()
@@ -76,12 +75,7 @@ public class ConversationsController(AppDbContext dbContext) : BaseController
     [HttpGet("o2o/{partnerId}")]
     public async Task<IActionResult> GetOneToOneConversation(string partnerId)
     {
-        var user = await dbContext.Users.SingleAsync(u => u.Id == User.GetUserId());
-        var partner = await dbContext.Users.SingleAsync(u => u.Id == partnerId);
-                
-        var conversation = await dbContext.Conversations
-            .Include(c => c.Users)
-            .SingleOrDefaultAsync(PrivateConversation(user, partner));
+        var conversation = await conversationService.GetOneToOneConversation([User.GetUserId(), partnerId]);   
 
         if (conversation is not null)
         {
@@ -102,10 +96,5 @@ public class ConversationsController(AppDbContext dbContext) : BaseController
         return NotFound();
     }
     
-    private static Expression<Func<Conversation, bool>> PrivateConversation(User user, User partner)
-    {
-        return c => c.Users.Count == 2 
-                    && c.Users.Any(u => u.UserId == user.Id) 
-                    && c.Users.Any(u => u.UserId == partner.Id);
-    }
+    
 }

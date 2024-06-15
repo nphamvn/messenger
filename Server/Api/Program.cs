@@ -1,4 +1,5 @@
 using Api.Hubs;
+using Api.Services;
 using Core;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -43,6 +44,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
         .LogTo(Console.WriteLine, LogLevel.Information)
         ;
 });
+builder.Services.AddScoped<IConversationService, ConversationService>();
 
 builder.Services.AddCors(options =>
 {
