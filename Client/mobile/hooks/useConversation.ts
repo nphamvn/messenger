@@ -1,6 +1,6 @@
 import { useQuery, useRealm } from "@realm/react";
 import { appConfig } from "constants/appConfig";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuth0 } from "react-native-auth0";
 import { BSON, UpdateMode } from "realm";
 import { User, Conversation, Message } from "schemas";
@@ -44,7 +44,9 @@ export default function useConversation(
 
   const getUser = async (userId: string) => {
     let user = realm.objectForPrimaryKey(User, userId);
+
     if (user) {
+      console.log("user: ", user);
       return user;
     }
     const accessToken = (await getCredentials())?.accessToken;
@@ -54,7 +56,7 @@ export default function useConversation(
         Authorization: `Bearer ${accessToken}`,
       },
     });
-
+    console.log("getUser: ", response);
     const json = await response.json();
 
     return realm.write(() => {
@@ -67,6 +69,9 @@ export default function useConversation(
   };
 
   function createConversation(users: User[]) {
+    console.log("Creating new conversation. Users: ", users);
+    if (users.length < 2)
+      throw new Error("Not enough users to create a conversation");
     return realm.create(Conversation, {
       cId: new BSON.ObjectId(),
       members: users,
@@ -90,15 +95,16 @@ export default function useConversation(
   const sendMessage = async (text: string) => {
     realm.write(() => {
       if (!conversation) {
-        const newConversation = realm.create(Conversation, {
-          cId: new BSON.ObjectId(),
-          members: users,
-        });
+        // Create a new conversation
+        const newConversation = createConversation(users);
 
         // Create a new message
         console.log("Creating new message");
         const message = createMessage(text, newConversation, user!);
-        realm.create(MessageAction, { action: "send", message: message });
+        realm.create(MessageAction, {
+          action: "send",
+          message: message,
+        });
         setConversation(newConversation);
       } else {
         const message = createMessage(text, conversation, user!);
@@ -245,6 +251,7 @@ export default function useConversation(
         }
       } else if (userId) {
         const member = await getUser(userId);
+
         setUsers([user!, member]);
         conversation = await getO2OConversation(member);
       }

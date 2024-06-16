@@ -1,5 +1,6 @@
-import { Stack, useLocalSearchParams } from "expo-router";
-import { useEffect, useRef, useState } from "react";
+import { useLocalSearchParams, useNavigation, useRouter } from "expo-router";
+import { MaterialIcons } from "@expo/vector-icons";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -20,17 +21,19 @@ import { Message } from "@schemas/index";
 import useAppDelegate from "@hooks/useAppDelegate";
 import useConversation from "@hooks/useConversation";
 
-export default function ChatScreen() {
+export default function Screen() {
   const { user } = useAppDelegate();
 
-  const { cId, uId } = useLocalSearchParams<{
+  const { cId, uId, returnScreen } = useLocalSearchParams<{
     cId?: string;
     uId?: string;
+    returnScreen?: string;
   }>();
+
   const { conversation, messages, sendMessage, deleteMessage, users } =
     useConversation(cId, uId);
 
-  const [text, setText] = useState<string>("");
+  const [messageText, setMessageText] = useState<string>();
   const messageInputRef = useRef<TextInput>(null);
 
   const [messageContextModalVisible, setMessageContextModalVisible] =
@@ -70,24 +73,38 @@ export default function ChatScreen() {
   }, [messageContextModalVisible, message.current]);
 
   const handleSendMessagePress = async () => {
-    if (text.length === 0) {
+    if (!messageText) {
       return;
     }
-    await sendMessage(text);
-    setText("");
+    await sendMessage(messageText);
+    setMessageText("");
     messageInputRef.current?.focus();
   };
+  const router = useRouter();
+  const navigation = useNavigation();
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      title: users
+        .filter((m) => m.id !== user?.id)
+        .map((m) => m.fullName + "(" + m.id + ")")
+        .join(", "),
+      headerLeft: () => (
+        <TouchableOpacity
+          onPress={() => {
+            if (returnScreen) {
+              router.navigate(returnScreen);
+            } else {
+              router.back();
+            }
+          }}
+        >
+          <MaterialIcons name="arrow-back-ios" size={24} color="#007AFF" />
+        </TouchableOpacity>
+      ),
+    });
+  }, [navigation, users, returnScreen]);
   return (
     <>
-      <Stack.Screen
-        options={{
-          title: users
-            .filter((m) => m.id !== user?.id)
-            .map((m) => m.fullName)
-            .join(", "),
-          headerBackTitleVisible: false,
-        }}
-      />
       <SafeAreaView style={{ flex: 1 }}>
         <View style={{ flex: 1, padding: 20, backgroundColor: "#fff" }}>
           <FlatList
@@ -114,6 +131,7 @@ export default function ChatScreen() {
                       <View style={[styles.messageBubble, styles.sent]}>
                         <Text style={styles.messageText}>{item.text}</Text>
                       </View>
+                      <Text style={styles.status}>{item.status}</Text>
                     </View>
                   ) : (
                     <View style={styles.messageWrapper}>
@@ -145,8 +163,8 @@ export default function ChatScreen() {
                 }}
               >
                 <TextInput
-                  value={text}
-                  onChangeText={setText}
+                  value={messageText}
+                  onChangeText={setMessageText}
                   placeholder="Type a message"
                   style={{
                     flex: 1,
@@ -159,7 +177,7 @@ export default function ChatScreen() {
                   ref={messageInputRef}
                 ></TextInput>
                 <Button
-                  disabled={text.length === 0}
+                  disabled={!messageText}
                   onPress={handleSendMessagePress}
                   title="Send"
                 />
@@ -343,5 +361,10 @@ const styles = StyleSheet.create({
     borderTopColor: "transparent",
     borderBottomWidth: 10,
     borderBottomColor: "transparent",
+  },
+  status: {
+    color: "#777",
+    fontSize: 12,
+    marginLeft: 10,
   },
 });

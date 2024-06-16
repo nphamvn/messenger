@@ -41,10 +41,15 @@ export default function useData() {
   };
 
   const getConversation = async (conversationId: number) => {
-    let conversation = realm.objectForPrimaryKey(Conversation, conversationId);
+    console.log("Getting conversation: ", conversationId);
+    let conversation = realm
+      .objects(Conversation)
+      .filtered(`sId = ${conversationId}`)[0];
     if (conversation) {
+      console.log("Conversation found: ", conversation);
       return conversation;
     }
+    console.log("Conversation not found. Try to fetch from server");
 
     const accessToken = (await getCredentials())?.accessToken;
     const response = await fetch(
@@ -60,14 +65,18 @@ export default function useData() {
     if (response.ok) {
       const json = (await response.json()) as {
         id: number;
-        members: { id: string }[];
+        members: { id: string; fullName: string; picture: string }[];
       };
       if (json.members.indexOf(user?.id) === -1) {
         throw new Error("User is not a member of the conversation");
       }
       return realm.write(() => {
         const members = json.members.map((m) => {
-          return realm.create(User, { id: m.id }, UpdateMode.Modified);
+          return realm.create(
+            User,
+            { id: m.id, fullName: m.fullName, picture: m.picture },
+            UpdateMode.Modified
+          );
         });
         return realm.create(Conversation, {
           cId: new BSON.ObjectId(),

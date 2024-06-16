@@ -5,45 +5,56 @@ import * as signalR from "@microsoft/signalr";
 import { BSON } from "realm";
 import { appConfig } from "constants/appConfig";
 import useData from "./useData";
+import { useAuth0 } from "react-native-auth0";
 
 export function useMessage(connection: signalR.HubConnection | undefined) {
   usePostMessage(connection);
 }
 
 function usePostMessage(connection: signalR.HubConnection | undefined) {
+  const { getCredentials } = useAuth0();
   const createdMessageActions =
     useQuery(MessageAction).filtered("status = 'created'");
   const realm = useRealm();
   const { getUser, getConversation } = useData();
 
   const handleReceiveMessage = async (message: {
-    id: number;
-    clientMessageId: string;
-    conversationId: number;
-    senderId: string;
+    Id: number;
+    ClientMessageId: string;
+    ConversationId: number;
+    SenderId: string;
+    Text: string;
   }) => {
-    const clientId = message.clientMessageId;
-    const msg = realm.objectForPrimaryKey(Message, new BSON.ObjectId(clientId));
-    if (!msg) {
-      const conversation = await getConversation(message.conversationId);
-      if (!conversation) {
-        return;
-      }
-
-      const sender = await getUser(message.senderId);
-      if (!sender) {
-        return;
-      }
-
-      realm.write(() => {
-        realm.create(Message, {
-          cId: new BSON.ObjectId(clientId),
-          sId: message.id,
-          conversation: conversation,
-          sender: sender,
-        });
-      });
+    console.log("Received message: ", message);
+    const msg = realm.objects(Message).filtered(`sId = ${message.Id}`)[0];
+    if (msg) {
+      console.log("Message already exists: ", msg, msg);
+      return;
     }
+    console.log("Message does not exist.");
+
+    const conversation = await getConversation(message.ConversationId);
+    if (!conversation) {
+      console.log("No conversation found for id: ", message.ConversationId);
+      return;
+    }
+
+    const sender = await getUser(message.SenderId);
+    if (!sender) {
+      console.log("No sender found for id: ", message.SenderId);
+      return;
+    }
+
+    console.log("Creating message: ", message);
+    realm.write(() => {
+      realm.create(Message, {
+        cId: new BSON.ObjectId(),
+        sId: message.Id,
+        conversation: conversation,
+        sender: sender,
+        text: message.Text,
+      });
+    });
   };
 
   useEffect(() => {
@@ -55,9 +66,25 @@ function usePostMessage(connection: signalR.HubConnection | undefined) {
 
   useEffect(() => {
     const sendMessages = async () => {
-      createdMessageActions.forEach(async (action) => {
-        const { message } = action;
-        console.log("Sending message: ", message);
+      const actionIds = createdMessageActions.map((action) => action._id);
+      const accessToken = (await getCredentials())?.accessToken;
+      for (let index = 0; index < actionIds.length; index++) {
+        const actionId = actionIds[index];
+        const action = realm.objectForPrimaryKey(MessageAction, actionId);
+        if (!action) {
+          console.log("No action found for id: ", actionId);
+          continue;
+        }
+        const message = realm.objectForPrimaryKey(Message, action.message.cId);
+        if (!message) {
+          console.log("No message found for action: ", action);
+          realm.write(() => {
+            realm.delete(action);
+            realm.delete(message);
+          });
+          continue;
+        }
+
         const response = await fetch(
           `${appConfig.API_URL}/conversations/messages`,
           {
@@ -67,17 +94,30 @@ function usePostMessage(connection: signalR.HubConnection | undefined) {
               MemberIds: message.conversation.members.map((u) => u.id),
               Text: message.text,
             }),
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${accessToken}`,
+            },
           }
         );
-        console.log("sendMessages: ", response.status);
         if (response.ok) {
+          const { id, conversationId } = await response.json();
+          console.log(
+            "Message sent: id: ",
+            id,
+            ", conversationId: ",
+            conversationId
+          );
           realm.write(() => {
-            console.log("Message sent");
+            message.sId = id;
             message.status = "sent";
+            if (!message.conversation.sId) {
+              message.conversation.sId = conversationId;
+            }
             realm.delete(action);
           });
         }
-      });
+      }
     };
 
     sendMessages();

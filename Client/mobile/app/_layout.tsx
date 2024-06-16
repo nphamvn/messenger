@@ -1,14 +1,12 @@
-import { Stack, usePathname } from "expo-router";
+import { Stack } from "expo-router";
 import React from "react";
 import { Auth0Provider } from "react-native-auth0";
 
 import { RealmProvider } from "@realm/react";
-import { schemas } from "../schemas";
-import { AppDelegateProvider } from "../hooks/useAppDelegate";
+import { schemas } from "@schemas/index";
+import { AppDelegateProvider } from "@hooks/useAppDelegate";
 
 export default function Root() {
-  const path = usePathname();
-  console.log("path: ", path);
   return (
     <Auth0Provider
       domain="dev-vzxphouz.us.auth0.com"
@@ -17,10 +15,8 @@ export default function Root() {
       <RealmProvider deleteRealmIfMigrationNeeded={true} schema={schemas}>
         <AppDelegateProvider>
           <Stack>
-            <Stack.Screen
-              name="(tabs)"
-              options={{ headerShown: false }}
-            ></Stack.Screen>
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="(screens)" options={{ headerShown: false }} />
             <Stack.Screen name="login" />
           </Stack>
         </AppDelegateProvider>

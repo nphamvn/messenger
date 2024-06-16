@@ -10,11 +10,12 @@ import {
   TextInput,
 } from "react-native";
 import { useAuth0 } from "react-native-auth0";
-import { router } from "expo-router";
+import { useRouter } from "expo-router";
 import Contact, { SearchPerson } from "../../../models/Contact";
 import { appConfig } from "../../../constants/appConfig";
 
 export default function ContactsScreen() {
+  const router = useRouter();
   const { getCredentials } = useAuth0();
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [searchPeople, setSearchPeople] = useState<SearchPerson[]>([]);
@@ -23,14 +24,12 @@ export default function ContactsScreen() {
   const [searchText, setSearchText] = useState("");
   useEffect(() => {
     (async () => {
-      console.log("Fetching contacts");
       const credentials = await getCredentials();
       const response = await fetch(`${appConfig.API_URL}/contacts`, {
         headers: {
           Authorization: `Bearer ${credentials?.accessToken}`,
         },
       });
-      console.log(response);
       const data = await response.json();
       setContacts(data);
     })();
@@ -126,10 +125,11 @@ export default function ContactsScreen() {
           renderItem={({ item }) => (
             <Pressable
               onPress={() => {
-                router.push({
+                router.navigate({
                   pathname: "/chat",
                   params: {
                     uId: item.id,
+                    returnScreen: "/contacts",
                   },
                 });
               }}
