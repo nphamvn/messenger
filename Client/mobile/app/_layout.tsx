@@ -16,7 +16,6 @@ export default function Root() {
         <AppDelegateProvider>
           <Stack>
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen name="(screens)" options={{ headerShown: false }} />
             <Stack.Screen name="login" />
           </Stack>
         </AppDelegateProvider>
