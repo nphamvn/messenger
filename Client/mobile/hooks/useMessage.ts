@@ -1,20 +1,19 @@
 import { useEffect } from "react";
-import { Message, MessageAction } from "@schemas/index";
+import { Message, Action } from "@schemas/index";
 import { useQuery, useRealm } from "@realm/react";
 import * as signalR from "@microsoft/signalr";
-import { BSON } from "realm";
+import { BSON, UpdateMode } from "realm";
 import { appConfig } from "constants/appConfig";
 import useData from "./useData";
 import { useAuth0 } from "react-native-auth0";
+import { Events } from "constants/Events";
 
 export function useMessage(connection: signalR.HubConnection | undefined) {
-  usePostMessage(connection);
+  useMessageSender(connection);
+  useMessageReceiver(connection);
 }
 
-function usePostMessage(connection: signalR.HubConnection | undefined) {
-  const { getCredentials } = useAuth0();
-  const createdMessageActions =
-    useQuery(MessageAction).filtered("status = 'created'");
+function useMessageReceiver(connection: signalR.HubConnection | undefined) {
   const realm = useRealm();
   const { getUser, getConversation } = useData();
 
@@ -26,13 +25,21 @@ function usePostMessage(connection: signalR.HubConnection | undefined) {
     Text: string;
   }) => {
     console.log("Received message: ", message);
-    const msg = realm.objects(Message).filtered(`sId = ${message.Id}`)[0];
-    if (msg) {
-      console.log("Message already exists: ", msg, msg);
+    const sMsg = realm.objects(Message).filtered(`sId = ${message.Id}`)[0];
+    if (sMsg) {
+      console.log("Server message exists: ", sMsg);
       return;
     }
-    console.log("Message does not exist.");
+    const cMsg = realm.objectForPrimaryKey(
+      Message,
+      new BSON.ObjectId(message.ClientMessageId)
+    );
+    if (cMsg) {
+      console.log("Client message exists: ", cMsg);
+      return;
+    }
 
+    console.log("Message does not exist.");
     const conversation = await getConversation(message.ConversationId);
     if (!conversation) {
       console.log("No conversation found for id: ", message.ConversationId);
@@ -47,35 +54,52 @@ function usePostMessage(connection: signalR.HubConnection | undefined) {
 
     console.log("Creating message: ", message);
     realm.write(() => {
-      realm.create(Message, {
-        cId: new BSON.ObjectId(),
-        sId: message.Id,
-        conversation: conversation,
-        sender: sender,
-        text: message.Text,
-      });
+      realm.create(
+        Message,
+        {
+          cId: new BSON.ObjectId(message.ClientMessageId),
+          sId: message.Id,
+          conversation: conversation,
+          sender: sender,
+          text: message.Text,
+          status: "sent",
+          createdAt: new Date(),
+        },
+        UpdateMode.Modified
+      );
     });
   };
 
   useEffect(() => {
-    connection?.on("ReceiveMessage", handleReceiveMessage);
+    connection?.on(Events.ReceiveMessage, handleReceiveMessage);
     return () => {
-      connection?.off("ReceiveMessage", handleReceiveMessage);
+      connection?.off(Events.ReceiveMessage, handleReceiveMessage);
     };
   }, [connection]);
+}
+
+function useMessageSender(connection: signalR.HubConnection | undefined) {
+  const { getCredentials } = useAuth0();
+  const realm = useRealm();
+
+  const sendMessageActions = useQuery(Action).filtered("type = 'SEND_MESSAGE'");
 
   useEffect(() => {
     const sendMessages = async () => {
-      const actionIds = createdMessageActions.map((action) => action._id);
+      const actionIds = sendMessageActions.map((action) => action._id);
       const accessToken = (await getCredentials())?.accessToken;
       for (let index = 0; index < actionIds.length; index++) {
-        const actionId = actionIds[index];
-        const action = realm.objectForPrimaryKey(MessageAction, actionId);
+        const action = realm.objectForPrimaryKey(Action, actionIds[index]);
         if (!action) {
-          console.log("No action found for id: ", actionId);
+          console.log("No action found for id: ", actionIds[index]);
           continue;
         }
-        const message = realm.objectForPrimaryKey(Message, action.message.cId);
+        const { messageId } = JSON.parse(action.payload);
+        const message = realm.objectForPrimaryKey(
+          Message,
+          new BSON.ObjectId(messageId)
+        );
+        console.log("message: ", message);
         if (!message) {
           console.log("No message found for action: ", action);
           realm.write(() => {
@@ -90,6 +114,7 @@ function usePostMessage(connection: signalR.HubConnection | undefined) {
           {
             method: "POST",
             body: JSON.stringify({
+              ClientMessageId: message.cId.toString(),
               ConversationId: message.conversation.sId ?? null,
               MemberIds: message.conversation.members.map((u) => u.id),
               Text: message.text,
@@ -100,6 +125,7 @@ function usePostMessage(connection: signalR.HubConnection | undefined) {
             },
           }
         );
+
         if (response.ok) {
           const { id, conversationId } = await response.json();
           console.log(
@@ -121,5 +147,5 @@ function usePostMessage(connection: signalR.HubConnection | undefined) {
     };
 
     sendMessages();
-  }, [createdMessageActions]);
+  }, [sendMessageActions]);
 }

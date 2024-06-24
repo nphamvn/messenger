@@ -5,7 +5,7 @@ import { useAuth0 } from "react-native-auth0";
 import { BSON, UpdateMode } from "realm";
 import { User, Conversation, Message } from "schemas";
 import useAppDelegate from "./useAppDelegate";
-import { MessageAction } from "@schemas/MessageAction";
+import { Action } from "@schemas/index";
 import { useConversationTypingIndicator } from "./useTypingIndicator";
 
 export default function useConversation(
@@ -38,7 +38,7 @@ export default function useConversation(
 
   useEffect(() => {
     if (conversation) {
-      syncMessages(conversation);
+      //syncMessages(conversation);
     }
   }, [conversation]);
 
@@ -56,7 +56,6 @@ export default function useConversation(
         Authorization: `Bearer ${accessToken}`,
       },
     });
-    console.log("getUser: ", response);
     const json = await response.json();
 
     return realm.write(() => {
@@ -92,6 +91,7 @@ export default function useConversation(
       createdAt: new Date(),
     });
   }
+
   const sendMessage = async (text: string) => {
     realm.write(() => {
       if (!conversation) {
@@ -101,14 +101,17 @@ export default function useConversation(
         // Create a new message
         console.log("Creating new message");
         const message = createMessage(text, newConversation, user!);
-        realm.create(MessageAction, {
-          action: "send",
-          message: message,
+        realm.create(Action, {
+          type: "SEND_MESSAGE",
+          payload: JSON.stringify({ messageId: message.cId }),
         });
         setConversation(newConversation);
       } else {
         const message = createMessage(text, conversation, user!);
-        realm.create(MessageAction, { action: "send", message: message });
+        realm.create(Action, {
+          type: "SEND_MESSAGE",
+          payload: JSON.stringify({ messageId: message.cId }),
+        });
       }
     });
   };

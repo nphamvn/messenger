@@ -1,6 +1,6 @@
 import { useLocalSearchParams, useNavigation, useRouter } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -11,8 +11,6 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
-  TouchableWithoutFeedback,
-  Keyboard,
   Button,
   TouchableOpacity,
   Modal,
@@ -20,10 +18,11 @@ import {
 import { Message } from "@schemas/index";
 import useAppDelegate from "@hooks/useAppDelegate";
 import useConversation from "@hooks/useConversation";
+import { useHeaderHeight } from "@react-navigation/elements";
 
 export default function Screen() {
   const { user } = useAppDelegate();
-
+  const headerHeight = useHeaderHeight();
   const { cId, uId, returnScreen } = useLocalSearchParams<{
     cId?: string;
     uId?: string;
@@ -83,11 +82,13 @@ export default function Screen() {
   const router = useRouter();
   const navigation = useNavigation();
   useLayoutEffect(() => {
+    const title = users
+      .filter((m) => m.id !== user?.id)
+      .map((m) => m.fullName + "(" + m.id + ")")
+      .join(", ");
+
     navigation.setOptions({
-      title: users
-        .filter((m) => m.id !== user?.id)
-        .map((m) => m.fullName + "(" + m.id + ")")
-        .join(", "),
+      title: title,
       headerLeft: () => (
         <TouchableOpacity
           onPress={() => {
@@ -103,89 +104,92 @@ export default function Screen() {
       ),
     });
   }, [navigation, users, returnScreen]);
+  const scrollRef = useRef<FlatList>(null);
   return (
-    <>
-      <SafeAreaView style={{ flex: 1 }}>
-        <View style={{ flex: 1, padding: 20, backgroundColor: "#fff" }}>
-          <FlatList
-            data={messages.map((m) => ({ ...m } as Message))}
-            renderItem={({ item }) => {
-              const isMyMessage = item.sender.id === user?.id;
-              return (
-                <TouchableOpacity
-                  ref={(ref) => (refs.current[item.cId.toString()] = ref)}
-                  onLongPress={() => {
-                    console.log("Long press on message", item);
-                    message.current = item;
-                    refs.current[item.cId.toString()]?.measure(
-                      (x, y, width, height, pageX, pageY) => {
-                        console.log({ x, y, width, height, pageX, pageY });
-                        measure.current = { x, y, width, height, pageX, pageY };
-                        setMessageContextModalVisible(true);
-                      }
-                    );
-                  }}
-                >
-                  {isMyMessage ? (
-                    <View style={[styles.messageWrapper, styles.sentWrapper]}>
-                      <View style={[styles.messageBubble, styles.sent]}>
-                        <Text style={styles.messageText}>{item.text}</Text>
-                      </View>
-                      <Text style={styles.status}>{item.status}</Text>
-                    </View>
-                  ) : (
-                    <View style={styles.messageWrapper}>
-                      <Image
-                        source={{
-                          uri: conversation?.members.find(
-                            (m) => m.id === item.sender?.id
-                          )?.picture,
-                        }}
-                        style={styles.userImage}
-                      />
-                      <View style={[styles.messageBubble, styles.received]}>
-                        <Text style={styles.messageText}>{item.text}</Text>
-                      </View>
-                    </View>
-                  )}
-                </TouchableOpacity>
-              );
-            }}
-          ></FlatList>
-          <KeyboardAvoidingView
-            behavior={Platform.OS === "ios" ? "padding" : "height"}
-            keyboardVerticalOffset={100}
-          >
-            <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-              <View
-                style={{
-                  flexDirection: "row",
+    <React.Fragment>
+      <View style={{ flex: 1, backgroundColor: "#fff" }}>
+        <FlatList
+          ref={scrollRef}
+          keyboardDismissMode="on-drag"
+          keyboardShouldPersistTaps="always"
+          onContentSizeChange={() => {
+            scrollRef.current?.scrollToEnd({ animated: true });
+          }}
+          data={messages.map((m) => ({ ...m } as Message))}
+          renderItem={({ item }) => {
+            const mine = item.sender.id === user?.id;
+            return (
+              <TouchableOpacity
+                ref={(ref) => (refs.current[item.cId.toString()] = ref)}
+                onLongPress={() => {
+                  message.current = item;
+                  refs.current[item.cId.toString()]?.measure(
+                    (x, y, width, height, pageX, pageY) => {
+                      console.log({ x, y, width, height, pageX, pageY });
+                      measure.current = { x, y, width, height, pageX, pageY };
+                      setMessageContextModalVisible(true);
+                    }
+                  );
                 }}
               >
-                <TextInput
-                  value={messageText}
-                  onChangeText={setMessageText}
-                  placeholder="Type a message"
-                  style={{
-                    flex: 1,
-                    borderWidth: 1,
-                    padding: 10,
-                    borderColor: "#ccc",
-                    borderRadius: 10,
-                    marginRight: 10,
-                  }}
-                  ref={messageInputRef}
-                ></TextInput>
-                <Button
-                  disabled={!messageText}
-                  onPress={handleSendMessagePress}
-                  title="Send"
-                />
-              </View>
-            </TouchableWithoutFeedback>
-          </KeyboardAvoidingView>
-        </View>
-      </SafeAreaView>
+                {mine ? (
+                  <View style={[styles.messageWrapper, styles.sentWrapper]}>
+                    <View style={[styles.messageBubble, styles.sent]}>
+                      <Text style={styles.messageText}>{item.text}</Text>
+                    </View>
+                    <Text style={styles.status}>{item.status}</Text>
+                  </View>
+                ) : (
+                  <View style={styles.messageWrapper}>
+                    <Image
+                      source={{
+                        uri: conversation?.members.find(
+                          (m) => m.id === item.sender?.id
+                        )?.picture,
+                      }}
+                      style={styles.userImage}
+                    />
+                    <View style={[styles.messageBubble, styles.received]}>
+                      <Text style={styles.messageText}>{item.text}</Text>
+                    </View>
+                  </View>
+                )}
+              </TouchableOpacity>
+            );
+          }}
+        ></FlatList>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          keyboardVerticalOffset={headerHeight}
+        >
+          <View
+            style={{
+              flexDirection: "row",
+            }}
+          >
+            <TextInput
+              value={messageText}
+              onChangeText={setMessageText}
+              placeholder="Type a message"
+              multiline
+              style={{
+                flex: 1,
+                borderWidth: 1,
+                padding: 10,
+                borderColor: "#ccc",
+                borderRadius: 10,
+                marginRight: 10,
+              }}
+              ref={messageInputRef}
+            ></TextInput>
+            <Button
+              disabled={!messageText}
+              onPress={handleSendMessagePress}
+              title="Send"
+            />
+          </View>
+        </KeyboardAvoidingView>
+      </View>
       <Modal visible={messageContextModalVisible} transparent>
         <TouchableOpacity
           activeOpacity={1}
@@ -287,7 +291,7 @@ export default function Screen() {
           </TouchableOpacity>
         </Modal>
       </Modal>
-    </>
+    </React.Fragment>
   );
 }
 
