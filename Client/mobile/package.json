@@ -27,7 +27,7 @@
     "react-native-screens": "3.31.1",
     "react-native-uuid": "^2.0.2",
     "react-signalr": "^0.2.22",
-    "realm": "^12.9.0",
+    "realm": "^12.11.0",
     "uuid": "^10.0.0"
   },
   "devDependencies": {
