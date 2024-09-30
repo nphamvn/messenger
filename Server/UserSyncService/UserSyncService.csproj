@@ -9,7 +9,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Auth0.ManagementApi" Version="7.26.2" />
+        <PackageReference Include="Auth0.ManagementApi" Version="7.27.0" />
         <PackageReference Include="Dapper" Version="2.1.35" />
         <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0"/>
         <PackageReference Include="Npgsql" Version="8.0.3" />
